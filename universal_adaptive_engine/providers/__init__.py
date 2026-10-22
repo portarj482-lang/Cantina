@@ -18,6 +18,13 @@ from universal_adaptive_engine.providers.factory import (
     list_available_providers,
 )
 
+from universal_adaptive_engine.providers.gateway import (
+    OpenAIReasoningGateway,
+    GatewayPolicyDecision,
+    GatewaySecurityError,
+    GatewayAuditRecord,
+)
+
 __all__ = [
     "ReasoningRequest",
     "ReasoningResponse",
@@ -31,4 +38,8 @@ __all__ = [
     "OpenAIReasoningProvider",
     "get_reasoning_provider",
     "list_available_providers",
+    "OpenAIReasoningGateway",
+    "GatewayPolicyDecision",
+    "GatewaySecurityError",
+    "GatewayAuditRecord",
 ]

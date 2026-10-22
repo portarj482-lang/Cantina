@@ -125,7 +125,20 @@ class HostEnvironmentAdapter(BaseArchitectureAdapter):
 
         # Check permissions
         for perm in permissions:
-            if perm == "network.outbound":
+            if perm == "network.outbound.openai_reasoning_gateway":
+                # Section 6A Scoped Network Exception:
+                # Strictly restricted to the designated isolated reasoning gateway
+                caller = contract.get("component")
+                if caller not in ("openai_reasoning_gateway", "reasoning_provider"):
+                    issues.append(
+                        f"Scoped network exception '{perm}' is restricted exclusively to the isolated reasoning gateway (attempted by unauthorized component: '{caller}')."
+                    )
+                dest = contract.get("destination", "")
+                if dest and dest != "api.openai.com:443":
+                    issues.append(
+                        f"Scoped network exception destination '{dest}' is unauthorized. Only 'api.openai.com:443' is permitted."
+                    )
+            elif perm == "network.outbound" or perm.startswith("network."):
                 issues.append("Outbound network access is restricted by policy guardrails.")
             elif perm == "filesystem.write_outside_workspace":
                 issues.append("Writing outside workspace boundary is forbidden.")

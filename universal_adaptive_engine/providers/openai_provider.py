@@ -20,6 +20,10 @@ from universal_adaptive_engine.providers.config import (
     REASONING_MODELS,
     redact_api_key,
 )
+from universal_adaptive_engine.providers.gateway import (
+    OpenAIReasoningGateway,
+    GatewaySecurityError,
+)
 
 logger = logging.getLogger("universal_adaptive_engine.providers.openai")
 
@@ -90,6 +94,10 @@ class OpenAIReasoningProvider:
     ):
         self.config = config or OpenAIConfig.from_env()
         self.transport = transport or _default_requests_transport
+        self.gateway = OpenAIReasoningGateway(
+            audit_file=self.config.audit_file,
+            transport=self.transport,
+        )
 
     def get_capabilities(self) -> ProviderCapabilities:
         """Return the declared capabilities of this provider."""
@@ -117,14 +125,17 @@ class OpenAIReasoningProvider:
             )
         try:
             self.config.validate()
-            # If a custom or mock transport is injected, run a probe
+            # If a custom or mock transport is injected, run a probe via the gateway
             if self.transport is not _default_requests_transport:
-                status_code, data, _ = self.transport(
-                    "GET",
-                    f"{self.config.base_url}/models",
-                    {"Authorization": f"Bearer {self.config.api_key}"},
-                    None,
-                    min(self.config.timeout_seconds, 5.0),
+                base = self.config.base_url.rstrip("/")
+                models_url = f"{base}/models" if base.endswith("/v1") else f"{base}/v1/models"
+                status_code, data, _ = self.gateway.dispatch_request(
+                    method="GET",
+                    url=models_url,
+                    headers={"Authorization": f"Bearer {self.config.api_key}"},
+                    payload=None,
+                    timeout=min(self.config.timeout_seconds, 5.0),
+                    caller_component=self.gateway.GATEWAY_COMPONENT_NAME,
                 )
                 latency_ms = (time.time() - t0) * 1000
                 if status_code == 200:
@@ -192,7 +203,13 @@ class OpenAIReasoningProvider:
             )
 
         payload = self._build_api_payload(request, structured_schema)
-        url = f"{self.config.base_url}/chat/completions"
+        base = self.config.base_url.rstrip("/")
+        if self.config.api_mode == "responses":
+            endpoint = "/responses" if base.endswith("/v1") else "/v1/responses"
+        else:
+            endpoint = "/chat/completions" if base.endswith("/v1") else "/v1/chat/completions"
+        url = f"{base}{endpoint}"
+
         headers = {
             "Authorization": f"Bearer {self.config.api_key}",
             "Content-Type": "application/json",
@@ -206,8 +223,14 @@ class OpenAIReasoningProvider:
 
         while retries <= self.config.max_retries:
             try:
-                status_code, data, resp_headers = self.transport(
-                    "POST", url, headers, payload, self.config.timeout_seconds
+                status_code, data, resp_headers = self.gateway.dispatch_request(
+                    method="POST",
+                    url=url,
+                    headers=headers,
+                    payload=payload,
+                    timeout=self.config.timeout_seconds,
+                    request_id=request_id,
+                    caller_component=self.gateway.GATEWAY_COMPONENT_NAME,
                 )
                 last_status_code = status_code
 
@@ -356,24 +379,36 @@ class OpenAIReasoningProvider:
         """Parse completed response and extract usage, text, and structured data."""
         response_id = data.get("id")
         choices = data.get("choices", [])
-        if not choices:
+        content = ""
+        msg = {}
+        finish_reason = "stop"
+
+        if "output_text" in data and isinstance(data["output_text"], str):
+            content = data["output_text"]
+        elif choices:
+            choice = choices[0]
+            finish_reason = choice.get("finish_reason", "stop")
+            msg = choice.get("message", {})
+            content = msg.get("content", "")
+        elif "output" in data and isinstance(data["output"], list) and len(data["output"]) > 0:
+            first_out = data["output"][0]
+            if isinstance(first_out, dict):
+                content = first_out.get("content", [{}])[0].get("text", "") if isinstance(first_out.get("content"), list) else str(first_out)
+            else:
+                content = str(first_out)
+        else:
             return self._handle_failure(
                 request=request,
                 request_id=request_id,
                 status=ReasoningStatus.FAILED,
-                error_msg="Malformed response: choices list is empty",
+                error_msg="Malformed response: neither choices nor output_text present",
                 latency_ms=latency_ms,
             )
 
-        choice = choices[0]
-        finish_reason = choice.get("finish_reason", "stop")
-        msg = choice.get("message", {})
-        content = msg.get("content", "")
-
         # Check for model refusal
-        if msg.get("refusal") or finish_reason == "content_filter":
-            refusal_reason = msg.get("refusal") or "Model refused request due to content filters"
-            refusal_text = f"Model refusal: {refusal_reason}"
+        refusal_reason = msg.get("refusal") or data.get("refusal")
+        if refusal_reason or finish_reason == "content_filter":
+            refusal_text = f"Model refusal: {refusal_reason or 'Model refused request due to content filters'}"
             return ReasoningResponse(
                 provider=self.provider_name,
                 model=self.config.model,

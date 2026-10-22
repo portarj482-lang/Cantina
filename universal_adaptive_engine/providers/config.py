@@ -37,6 +37,8 @@ class OpenAIConfig:
     store_responses: bool = False
     base_url: str = "https://api.openai.com/v1"
     fallback_provider: str = "none"
+    api_mode: str = "responses"  # "responses" or "chat_completions"
+    audit_file: Optional[str] = None
 
     def __post_init__(self) -> None:
         self.validate()
@@ -106,6 +108,8 @@ class OpenAIConfig:
 
         base_url = source.get("OPENAI_BASE_URL", "https://api.openai.com/v1").strip().rstrip("/")
         fallback = source.get("USAP_OPENAI_FALLBACK_PROVIDER", "none").strip()
+        api_mode = source.get("OPENAI_API_MODE", "responses").strip().lower()
+        audit_file = source.get("USAP_GATEWAY_AUDIT_FILE", None)
 
         return cls(
             api_key=api_key,
@@ -117,6 +121,8 @@ class OpenAIConfig:
             store_responses=store_responses,
             base_url=base_url,
             fallback_provider=fallback,
+            api_mode=api_mode,
+            audit_file=audit_file,
         )
 
     def to_safe_dict(self) -> dict[str, Any]:
@@ -130,6 +136,7 @@ class OpenAIConfig:
             "store_responses": self.store_responses,
             "base_url": self.base_url,
             "fallback_provider": self.fallback_provider,
+            "api_mode": self.api_mode,
             "api_key_configured": bool(self.api_key),
             "api_key_redacted": redact_api_key(self.api_key),
         }

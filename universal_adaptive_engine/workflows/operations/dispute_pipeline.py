@@ -206,7 +206,24 @@ class DisputeProveVerifierWorkflow(VerificationEngineerWorkflow):
             }
 
         # Invariant checks for INV-DISPUTE-01
-        # Model verification:
+        # If real forge execution is requested:
+        workspace_root = Path(
+            context.get("workspace_root")
+            or getattr(self.adapter, "workspace_root", ".")
+        ).resolve()
+        tc = context.get("target_context")
+        if not tc:
+            from universal_adaptive_engine.models.target_context import TargetContextResolver
+            tc = TargetContextResolver.resolve(context, workspace_root)
+        target_root = tc.target_root if tc else workspace_root
+
+        if context.get("use_forge") or context.get("forge_args"):
+            forge_ctx = dict(context)
+            forge_ctx["workspace_root"] = str(target_root)
+            forge_ctx["use_forge"] = True
+            return super().run_step(forge_ctx)
+
+        # Model verification checklist stub:
         # 1. provenWithdrawals storage binding
         # 2. disputeGame DEFENDER_WINS assertion
         # 3. proofMaturityDelaySeconds enforcement

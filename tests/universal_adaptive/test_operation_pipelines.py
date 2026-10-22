@@ -454,6 +454,29 @@ class TestOperationPipelines(unittest.TestCase):
         self.assertEqual(tc.target_root, file_target.parent)
         self.assertEqual(tc.metadata.get("target_file"), str(file_target.resolve()))
 
+    def test_dispute_and_weth_verifier_forge_delegation_hooks(self):
+        from universal_adaptive_engine.workflows.operations.dispute_pipeline import DisputeProveVerifierWorkflow
+        from universal_adaptive_engine.workflows.operations.delayed_weth_pipeline import WETHSolvencyVerifierWorkflow
+
+        disp_wf = DisputeProveVerifierWorkflow(self.cantina_adapter)
+        # Passing broken forge command triggers the VerificationEngineer error handling
+        with self.assertRaises(RuntimeError) as ctx:
+            disp_wf.run_step({
+                "use_forge": True,
+                "workspace_root": str(self.workspace_root),
+                "forge_args": ["nonexistent_subcommand_test"],
+            })
+        self.assertIn("forge", str(ctx.exception).lower())
+
+        weth_wf = WETHSolvencyVerifierWorkflow(self.cantina_adapter)
+        with self.assertRaises(RuntimeError) as ctx:
+            weth_wf.run_step({
+                "use_forge": True,
+                "workspace_root": str(self.workspace_root),
+                "forge_args": ["nonexistent_subcommand_test"],
+            })
+        self.assertIn("forge", str(ctx.exception).lower())
+
 
 if __name__ == "__main__":
     unittest.main()

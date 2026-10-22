@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://antigravity.dev/schemas/capability_record.schema.json",
+  "title": "Canonical Capability Record",
+  "description": "Represents an observed, assumed, or verified capability within the host environment.",
+  "type": "object",
+  "required": [
+    "capability_id",
+    "display_name",
+    "status",
+    "permissions_required",
+    "inputs",
+    "outputs",
+    "dependencies",
+    "evidence_refs",
+    "limitations"
+  ],
+  "properties": {
+    "capability_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9._-]+$",
+      "description": "Unique capability dot-path identifier"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": ["VERIFIED", "PARTIAL", "ASSUMED", "BLOCKED", "FAILED", "UNKNOWN"]
+    },
+    "implementation_ref": {
+      "type": ["string", "null"]
+    },
+    "interface_ref": {
+      "type": ["string", "null"]
+    },
+    "owner": {
+      "type": ["string", "null"]
+    },
+    "permissions_required": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "inputs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "outputs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "last_verified_at": {
+      "type": ["string", "null"]
+    }
+  }
+}

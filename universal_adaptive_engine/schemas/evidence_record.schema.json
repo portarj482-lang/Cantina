@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://antigravity.dev/schemas/evidence_record.schema.json",
+  "title": "Canonical Evidence Record",
+  "description": "Represents an immutable evidence record linking claims to verifiable artifacts and observations.",
+  "type": "object",
+  "required": [
+    "evidence_id",
+    "evidence_type",
+    "source_ref",
+    "acquisition_method",
+    "observed_result",
+    "confidence",
+    "timestamp"
+  ],
+  "properties": {
+    "evidence_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "description": "Unique identifier for evidence record (e.g. EVID-0001)"
+    },
+    "evidence_type": {
+      "type": "string",
+      "enum": [
+        "OBSERVED",
+        "DERIVED",
+        "HYPOTHESIS",
+        "UNVERIFIED",
+        "REFUTED",
+        "SUPERSEDED"
+      ]
+    },
+    "source_ref": {
+      "type": "string",
+      "description": "Origin reference (e.g. file path, commit, URL, or test command)"
+    },
+    "artifact_path": {
+      "type": ["string", "null"],
+      "description": "Path to preserved local artifact file"
+    },
+    "sha256": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-fA-F]{64}$",
+      "description": "Cryptographic SHA-256 digest of artifact"
+    },
+    "acquisition_method": {
+      "type": "string",
+      "description": "How the evidence was acquired (e.g. 'direct_file_read', 'command_execution', 'unit_test')"
+    },
+    "observed_result": {
+      "type": "string",
+      "description": "Objective observation without speculative extrapolation"
+    },
+    "tool_version": {
+      "type": ["string", "null"]
+    },
+    "related_task_id": {
+      "type": ["string", "null"]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["verified", "high", "medium", "low", "unverified", "refuted"]
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "ISO 8601 timestamp"
+    }
+  }
+}

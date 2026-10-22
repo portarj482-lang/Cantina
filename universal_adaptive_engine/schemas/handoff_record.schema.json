@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://antigravity.dev/schemas/handoff_record.schema.json",
+  "title": "Canonical Machine-Validated Agent Handoff Record",
+  "description": "Machine-validated structured handoff envelope returned by every agent or workflow stage according to Section 10 of the architecture specification.",
+  "type": "object",
+  "required": [
+    "task_id",
+    "agent_role",
+    "status",
+    "summary",
+    "claims",
+    "evidence_refs",
+    "files_inspected",
+    "files_changed",
+    "commands_run",
+    "tests",
+    "artifacts",
+    "assumptions",
+    "limitations",
+    "security_concerns",
+    "next_action"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "description": "Identifier of the task associated with this handoff"
+    },
+    "agent_role": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name or persona role of the executing agent"
+    },
+    "stage": {
+      "type": ["string", "null"],
+      "description": "Workflow lifecycle stage (e.g. INTAKE, DISCOVERY, VERIFICATION)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "COMPLETED_VERIFIED",
+        "COMPLETED_WITH_LIMITATIONS",
+        "BLOCKED",
+        "FAILED",
+        "NOT_RUN",
+        "IN_PROGRESS"
+      ],
+      "description": "Execution status outcome for this handoff"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Executive summary of results and findings"
+    },
+    "claims": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of factual or derived claims produced by the agent"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Evidence record IDs supporting claims and verification"
+    },
+    "files_inspected": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Paths to files inspected during execution"
+    },
+    "files_changed": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Paths to files created, modified, or deleted"
+    },
+    "commands_run": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["command", "exit_code"],
+        "properties": {
+          "command": { "type": "string" },
+          "exit_code": { "type": "integer" },
+          "duration_ms": { "type": "number" }
+        }
+      },
+      "description": "Deterministic commands executed during workflow step"
+    },
+    "tests": {
+      "type": "object",
+      "required": ["passed", "failed", "skipped", "not_run"],
+      "properties": {
+        "passed": { "type": "array", "items": { "type": ["string", "object"] } },
+        "failed": { "type": "array", "items": { "type": ["string", "object"] } },
+        "skipped": { "type": "array", "items": { "type": ["string", "object"] } },
+        "not_run": { "type": "array", "items": { "type": ["string", "object"] } }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Outputs and generated artifacts produced"
+    },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Explicit assumptions made during analysis"
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Known omissions, untested paths, or operational limitations"
+    },
+    "security_concerns": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Security risks, trust boundary notes, or policy considerations"
+    },
+    "next_action": {
+      "type": "string",
+      "description": "Recommended next step or handoff target"
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "ISO 8601 UTC timestamp when handoff was created"
+    }
+  }
+}

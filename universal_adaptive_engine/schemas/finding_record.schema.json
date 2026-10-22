@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://antigravity.dev/schemas/finding_record.schema.json",
+  "title": "Canonical Finding Record",
+  "description": "Represents an identified security, architectural, or implementation finding with explicit provenance and evidence.",
+  "type": "object",
+  "required": [
+    "finding_id",
+    "title",
+    "status",
+    "source_refs",
+    "affected_versions",
+    "locations",
+    "original_labels",
+    "derived_labels",
+    "preconditions",
+    "impact",
+    "exploitability",
+    "reproduction_refs",
+    "counterevidence_refs",
+    "fix_refs",
+    "regression_results",
+    "confidence",
+    "unresolved_assumptions"
+  ],
+  "properties": {
+    "finding_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "description": "Unique identifier for the finding (e.g. FIND-0001)"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short, specific summary of the claim"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "CANDIDATE",
+        "SUPPORTED",
+        "REFUTED",
+        "UNRESOLVED",
+        "ACCEPTED",
+        "DUPLICATE",
+        "REJECTED"
+      ],
+      "description": "Verification status of the finding"
+    },
+    "source_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Provenance tags and source pointers (e.g. [SRC: ...], [CORPUS: ...])"
+    },
+    "affected_versions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Target software versions affected"
+    },
+    "locations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path"],
+        "properties": {
+          "path": { "type": "string" },
+          "start_line": { "type": ["integer", "null"] },
+          "end_line": { "type": ["integer", "null"] },
+          "symbol": { "type": ["string", "null"] }
+        }
+      },
+      "description": "Code locations implicated in the finding"
+    },
+    "original_labels": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Labels assigned by the origin corpus (e.g. Web3Bugs 'O', 'L', 'S')"
+    },
+    "derived_labels": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Derived taxonomy classifications produced by analysis"
+    },
+    "preconditions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "State preconditions required for the claim to hold"
+    },
+    "security_property": {
+      "type": ["string", "null"],
+      "description": "Violated security or invariant property"
+    },
+    "root_cause": {
+      "type": ["string", "null"],
+      "description": "Underlying defect or causal mechanism"
+    },
+    "impact": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low", "informational", "unknown"],
+      "description": "Assessed severity impact"
+    },
+    "exploitability": {
+      "type": "string",
+      "enum": ["demonstrated", "plausible", "theoretical", "unverified", "refuted"],
+      "description": "Degree to which exploitability has been demonstrated"
+    },
+    "reproduction_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "References to PoC test runs, traces, or reproduction scripts"
+    },
+    "counterevidence_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "References to falsification attempts or mitigating controls"
+    },
+    "fix_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "References to candidate patch diffs or commits"
+    },
+    "regression_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["test_id", "outcome"],
+        "properties": {
+          "test_id": { "type": "string" },
+          "outcome": { "type": "string", "enum": ["passed", "failed", "skipped"] },
+          "details": { "type": "string" }
+        }
+      },
+      "description": "Regression test results when validating fixes"
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["verified", "high", "medium", "low", "unverified", "refuted"],
+      "description": "Confidence level strictly aligned with evidence quality"
+    },
+    "unresolved_assumptions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Assumptions not yet verified by deterministic testing"
+    },
+    "created_at": {
+      "type": "string",
+      "description": "ISO 8601 timestamp of creation"
+    },
+    "updated_at": {
+      "type": "string",
+      "description": "ISO 8601 timestamp of update"
+    }
+  }
+}

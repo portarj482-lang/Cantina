@@ -27,7 +27,7 @@ class CantinaBountyPipeline(CanonicalAdaptivePipeline):
 
     def __init__(
         self,
-        workspace_root: Path | str = "/home/nova/projects/cantina",
+        workspace_root: Path | str = ".",
         *,
         execution_policy: ExecutionPolicy | None = None,
         trusted_scope_sha256: Optional[str] = None,

@@ -82,15 +82,10 @@ def adjudicate_checks(results: list[CheckResult]) -> str:
 # 2. Provenance-Aware Artifact Discovery
 # ============================================================================
 
-REQUIRED_TEE_ARTIFACTS = (
-    Path("bounties/base/contracts/src/L1/proofs/tee/TEEProverRegistry.sol"),
-    Path("bounties/base/base/crates/proof/tee/registrar/src/hints.rs"),
-)
-
-
-def discover_tee_artifacts(workspace_root: Path) -> dict[str, Any]:
+def discover_tee_artifacts(workspace_root: Path, target_root: Optional[Path] = None) -> dict[str, Any]:
     """Inspects TEE contract and crate artifacts with containment and hash provenance."""
     root = workspace_root.resolve()
+    t_root = (target_root or root).resolve()
 
     if not root.is_dir():
         raise NotADirectoryError(str(root))
@@ -100,25 +95,46 @@ def discover_tee_artifacts(workspace_root: Path) -> dict[str, Any]:
     errors: list[dict[str, str]] = []
     features: dict[str, bool] = {}
 
-    for relative_path in REQUIRED_TEE_ARTIFACTS:
-        candidate = (root / relative_path).resolve()
+    target_artifacts = [
+        ("TEEProverRegistry.sol", [
+            "contracts/src/L1/proofs/tee/TEEProverRegistry.sol",
+            "src/L1/proofs/tee/TEEProverRegistry.sol",
+            "src/TEEProverRegistry.sol",
+            "TEEProverRegistry.sol",
+        ]),
+        ("hints.rs", [
+            "base/crates/proof/tee/registrar/src/hints.rs",
+            "crates/proof/tee/registrar/src/hints.rs",
+            "src/hints.rs",
+            "hints.rs",
+        ]),
+    ]
 
-        # Prevent path traversal and symlink escape.
-        if not candidate.is_relative_to(root):
-            errors.append({
-                "path": str(relative_path),
-                "error": "Path escapes workspace root",
-            })
-            continue
+    for name, candidates in target_artifacts:
+        matched: Optional[Path] = None
+        for cand in candidates:
+            p = t_root / cand
+            if p.exists() and p.is_file():
+                matched = p
+                break
+        if not matched and t_root.exists() and t_root.is_dir():
+            for p in t_root.glob(f"**/{name}"):
+                if p.is_file() and not any(part.startswith(".") or part in ("node_modules", "out", "cache", "build") for part in p.parts):
+                    matched = p
+                    break
 
-        if not candidate.is_file():
-            missing.append(relative_path.as_posix())
+        if not matched:
+            missing.append(name)
             continue
 
         try:
-            raw = candidate.read_bytes()
+            rel = matched.relative_to(root).as_posix()
+        except ValueError:
+            rel = matched.as_posix()
+
+        try:
+            raw = matched.read_bytes()
             content = raw.decode("utf-8", errors="replace")
-            # Feature extraction from source logic
             if "registerSigner" in content:
                 features["registerSigner_entrypoint"] = True
             if "isValidSigner" in content:
@@ -129,13 +145,13 @@ def discover_tee_artifacts(workspace_root: Path) -> dict[str, Any]:
                 features["attestation_rules"] = True
         except OSError as exc:
             errors.append({
-                "path": relative_path.as_posix(),
+                "path": rel,
                 "error": type(exc).__name__,
             })
             continue
 
         artifacts.append({
-            "path": relative_path.as_posix(),
+            "path": rel,
             "sha256": hashlib.sha256(raw).hexdigest(),
             "size_bytes": str(len(raw)),
         })
@@ -181,7 +197,7 @@ class DefaultTEEVerificationBackend:
 
     def __init__(
         self,
-        workspace_root: Path | str = "/home/nova/projects/cantina",
+        workspace_root: Path | str = ".",
         trusted_root_ca_hash: str = "ba9874e6f82161f52d5b6f3a76e2797e889cdba33e7300c01a18ff5ab18fcf57",
         max_future_skew: int = 300,
         max_age: int = 7200,
@@ -463,11 +479,16 @@ class MultiproofTEEAnalystWorkflow(ArchitectureAnalystWorkflow):
     def run_step(self, context: dict[str, Any]) -> dict[str, Any]:
         workspace_root = Path(
             context.get("workspace_root")
-            or getattr(self.adapter, "workspace_root", "/home/nova/projects/cantina")
+            or getattr(self.adapter, "workspace_root", ".")
         ).resolve()
         task_id = context.get("task_id", "TASK-TEE-001")
 
-        disc = discover_tee_artifacts(workspace_root)
+        tc = context.get("target_context")
+        if not tc:
+            from universal_adaptive_engine.models.target_context import TargetContextResolver
+            tc = TargetContextResolver.resolve(context, workspace_root)
+
+        disc = discover_tee_artifacts(workspace_root, target_root=tc.target_root)
         artifacts = disc["artifacts"]
         missing = disc["missing"]
         errors = disc["errors"]
@@ -477,25 +498,42 @@ class MultiproofTEEAnalystWorkflow(ArchitectureAnalystWorkflow):
             raise PermissionError(f"Artifact discovery boundary violation: {errors}")
 
         if missing:
-            raise FileNotFoundError(f"Multiproof TEE Invariant Analyst could not locate required TEE artifacts: {missing}")
+            if tc.target_id in ("base", "unknown-target") or not tc.target_root.exists() or len(list(tc.target_root.iterdir())) == 0:
+                raise FileNotFoundError(f"Multiproof TEE Invariant Analyst could not locate required TEE artifacts: {missing}")
+            status = "COMPLETED_WITH_LIMITATIONS"
+            summary = f"Multiproof TEE Invariant Analyst: INV-MULTIPROOF-03 is NOT_APPLICABLE to target '{tc.target_id}' (architecture: {tc.architecture}; TEE artifacts not present)"
+            limitations = [f"Invariant INV-MULTIPROOF-03 is NOT_APPLICABLE: target '{tc.target_id}' does not implement TEE Prover Registry"]
+            claims = [f"Target '{tc.target_id}' does not contain TEE Prover Registry artifacts"]
+            evidence_refs = [f"EVID-TEE-DISCOVERY-{task_id}"]
+            return {
+                "status": "COMPLETED_WITH_LIMITATIONS" if status == "COMPLETED_VERIFIED" else status,
+                "summary": summary,
+                "claims": claims,
+                "evidence_refs": evidence_refs,
+                "files_inspected": [],
+                "artifacts": [],
+                "limitations": limitations,
+                "next_action": "Mark TEE verification NOT_APPLICABLE to target",
+                "tests": TaskTests(passed=[], failed=[]),
+            }
 
         claims = [
-            f"TEE artifacts verified on disk with SHA-256 digests: {len(artifacts)} files",
+            f"TEE artifacts observed on disk with SHA-256 digests on target {tc.target_id}: {len(artifacts)} files",
             f"Extracted TEE capabilities: {', '.join(k for k, v in features.items() if v)}",
             "INV-MULTIPROOF-03 governance mapped under Multiproof TEE Invariant Oracle (G6)",
         ]
         evidence_refs = [f"EVID-TEE-DISCOVERY-{task_id}"]
 
         return {
-            "status": "COMPLETED_VERIFIED",
-            "summary": f"Multiproof TEE Invariant Analyst verified {len(artifacts)} artifacts for INV-MULTIPROOF-03",
+            "status": "COMPLETED_WITH_LIMITATIONS",
+            "summary": f"Multiproof TEE analyst recorded {len(artifacts)} local artifacts for INV-MULTIPROOF-03 on target {tc.target_id}; target behavior is not verified",
             "claims": claims,
             "evidence_refs": evidence_refs,
             "files_inspected": [a["path"] for a in artifacts],
             "artifacts": [a["path"] for a in artifacts],
-            "limitations": [],
+            "limitations": ["Artifact presence and hashes do not establish deployment provenance, Cantina scope, or invariant behavior"],
             "next_action": "Proceed to security policy and trust configuration review",
-            "tests": TaskTests(passed=["tee_artifact_provenance_discovery", "p384_hints_features_mapped"]),
+            "tests": TaskTests(passed=[], failed=[]),
         }
 
 
@@ -524,21 +562,21 @@ class MultiproofTEESecurityReviewerWorkflow(SecurityReviewerWorkflow):
         }
 
         claims = [
-            "Audit Agent ruling FORK-SAFE enforced: all attestation checks run in local isolated test environment",
-            "Scope Agent verified TEEProverRegistry and NitroValidator bindings under Cantina Base Tier 0 scope",
-            f"Configured trust policy: algorithm {trust_policy['cose_algorithm']}, max_age {trust_policy['max_age_seconds']}s",
-            "Nullification policy: nullified attestations immediately revoke signer authorization (fail-closed)",
+            "Proposed trust policy recorded for review; no Cantina scope snapshot or deployed bindings were verified",
+            f"Policy proposal: algorithm {trust_policy['cose_algorithm']}, max_age {trust_policy['max_age_seconds']}s",
+            "Nullification behavior is a policy requirement, not an observed target guarantee",
         ]
         evidence_refs = [f"EVID-TEE-SEC-AUTH-{task_id}"]
 
         return {
-            "status": "COMPLETED_VERIFIED",
-            "summary": "Multiproof TEE Security Reviewer established explicit trust policy and FORK-SAFE boundaries",
+            "status": "COMPLETED_WITH_LIMITATIONS",
+            "summary": "Multiproof TEE Security Reviewer recorded a proposed trust policy; target scope and enforcement remain unverified",
             "claims": claims,
             "evidence_refs": evidence_refs,
             "security_concerns": ["Private enclave signing keys must never be logged or retained on disk"],
+            "limitations": ["The trust policy is a proposal; no target scope or enforcement was checked"],
             "next_action": "Proceed to cryptographic attestation verification backend",
-            "tests": TaskTests(passed=["tee_scope_authorization", "trust_policy_specification", "nullifier_fail_closed_rule"]),
+            "tests": TaskTests(passed=[], failed=[]),
         }
 
 
@@ -557,6 +595,19 @@ class TEERegisterVerifierWorkflow(VerificationEngineerWorkflow):
     def run_step(self, context: dict[str, Any]) -> dict[str, Any]:
         task_id = context.get("task_id", "TASK-TEE-003")
         now = context.get("now", 1_700_000_000)
+
+        prior_handoff = context.get("last_handoff", {})
+        disc_handoff = context.get("stage_handoffs", {}).get("DISCOVERY", {})
+        if "NOT_APPLICABLE" in prior_handoff.get("summary", "") or "NOT_APPLICABLE" in disc_handoff.get("summary", ""):
+            return {
+                "status": "COMPLETED_WITH_LIMITATIONS",
+                "summary": "TEE Register Verifier: Invariant check NOT_APPLICABLE to current target",
+                "claims": ["TEE Register verification skipped: target does not implement TEE Prover Registry"],
+                "evidence_refs": [f"EVID-TEE-VERIFY-{task_id}"],
+                "tests": TaskTests(passed=[], failed=[]),
+                "limitations": ["INV-MULTIPROOF-03 verification skipped: target does not contain required TEE artifacts"],
+                "next_action": "Pass non-applicable state to challenger review",
+            }
 
         # Standard canonical test fixture for verified pipeline execution
         raw_pcr0 = bytes.fromhex("4a5b6c" * 16)  # 48 bytes
@@ -606,16 +657,16 @@ class TEERegisterVerifierWorkflow(VerificationEngineerWorkflow):
         claims = [
             f"TEE Register Verifier executed {len(checks)} checks via TEEVerificationBackend",
             f"Passed checks ({len(passed_checks)}): {', '.join(passed_checks)}",
-            "COSE Sign1, Nitro certificate chain, PCR0 binding, freshness, and registry state verified",
+            "COSE, certificate, PCR0, freshness, and registry checks ran against the local backend fixture only",
         ]
 
         return {
-            "status": status,
+            "status": "COMPLETED_WITH_LIMITATIONS" if status == "COMPLETED_VERIFIED" else status,
             "summary": f"TEE Register Verifier executed all checks with outcome {status} ({len(passed_checks)} PASS, {len(failed_checks)} FAIL)",
             "claims": claims,
             "evidence_refs": all_evidence_refs,
-            "tests": TaskTests(passed=passed_checks, failed=failed_checks),
-            "limitations": [f"Inconclusive checks: {inconclusive_checks}"] if inconclusive_checks else [],
+            "tests": TaskTests(passed=[], failed=[]),
+            "limitations": ["Verification exercised a local backend fixture, not deployed target contracts or attestation provenance"] + ([f"Inconclusive checks: {inconclusive_checks}"] if inconclusive_checks else []),
             "next_action": "Submit slice to independent challenger for executable adversarial review",
         }
 
@@ -647,6 +698,18 @@ class AttestationChallengerWorkflow(IndependentChallengerWorkflow):
 
         prior_handoff = context.get("last_handoff", {})
         prior_evidence = prior_handoff.get("evidence_refs", [])
+        disc_handoff = context.get("stage_handoffs", {}).get("DISCOVERY", {})
+
+        if "NOT_APPLICABLE" in prior_handoff.get("summary", "") or "NOT_APPLICABLE" in disc_handoff.get("summary", ""):
+            return {
+                "status": "COMPLETED_WITH_LIMITATIONS",
+                "summary": "Attestation Challenger: Adversarial tests NOT_APPLICABLE to current target",
+                "claims": ["Challenger review recorded: TEE domain operation not applicable to target"],
+                "evidence_refs": [f"EVID-TEE-CHALLENGE-{task_id}"],
+                "tests": TaskTests(passed=[], failed=[]),
+                "limitations": ["Adversarial falsification not applicable to non-TEE target"],
+                "next_action": "Proceed to staging admission and multiproof TEE completion report",
+            }
         if not prior_evidence and prior_handoff.get("status") == "COMPLETED_VERIFIED":
             raise AssertionError("Independent Challenger falsified prior claim: COMPLETED_VERIFIED without evidence")
 
@@ -682,7 +745,8 @@ class AttestationChallengerWorkflow(IndependentChallengerWorkflow):
         future_rejected = (res_future.outcome == CheckOutcome.FAIL)
         if context.get("simulate_future_attestation_allowed", False):
             future_rejected = False
-        assert future_rejected, "Negative control failed: future attestation must be rejected"
+        if not future_rejected:
+            raise RuntimeError("Negative control failed: future attestation must be rejected")
         adversarial_tests.append({
             "test_id": "adversarial_future_timestamp_rejected",
             "attack_class": "future_timestamp_skew",
@@ -698,7 +762,8 @@ class AttestationChallengerWorkflow(IndependentChallengerWorkflow):
         stale_rejected = (res_stale.outcome == CheckOutcome.FAIL)
         if context.get("simulate_stale_attestation_allowed", False):
             stale_rejected = False
-        assert stale_rejected, "Negative control failed: stale attestation must be rejected"
+        if not stale_rejected:
+            raise RuntimeError("Negative control failed: stale attestation must be rejected")
         adversarial_tests.append({
             "test_id": "adversarial_stale_timestamp_rejected",
             "attack_class": "stale_timestamp_expiry",
@@ -718,7 +783,8 @@ class AttestationChallengerWorkflow(IndependentChallengerWorkflow):
         tampered_sig_rejected = (res_tampered_sig.outcome == CheckOutcome.FAIL)
         if context.get("simulate_tampered_sig_allowed", False):
             tampered_sig_rejected = False
-        assert tampered_sig_rejected, "Negative control failed: tampered COSE signature must be rejected"
+        if not tampered_sig_rejected:
+            raise RuntimeError("Negative control failed: tampered COSE signature must be rejected")
         adversarial_tests.append({
             "test_id": "adversarial_cose_tampering_rejected",
             "attack_class": "cose_signature_tampering",
@@ -734,7 +800,8 @@ class AttestationChallengerWorkflow(IndependentChallengerWorkflow):
         untrusted_ca_rejected = (res_untrusted_ca.outcome == CheckOutcome.FAIL)
         if context.get("simulate_untrusted_root_allowed", False):
             untrusted_ca_rejected = False
-        assert untrusted_ca_rejected, "Negative control failed: untrusted root CA must be rejected"
+        if not untrusted_ca_rejected:
+            raise RuntimeError("Negative control failed: untrusted root CA must be rejected")
         adversarial_tests.append({
             "test_id": "adversarial_untrusted_root_ca_rejected",
             "attack_class": "untrusted_root_ca",
@@ -750,7 +817,8 @@ class AttestationChallengerWorkflow(IndependentChallengerWorkflow):
         wrong_image_rejected = (res_wrong_image.outcome == CheckOutcome.FAIL)
         if context.get("simulate_mismatched_image_allowed", False):
             wrong_image_rejected = False
-        assert wrong_image_rejected, "Negative control failed: mismatched image must be rejected"
+        if not wrong_image_rejected:
+            raise RuntimeError("Negative control failed: mismatched image must be rejected")
         adversarial_tests.append({
             "test_id": "adversarial_image_substitution_rejected",
             "attack_class": "image_substitution",
@@ -766,7 +834,8 @@ class AttestationChallengerWorkflow(IndependentChallengerWorkflow):
         wrong_signer_rejected = (res_wrong_signer.outcome == CheckOutcome.FAIL)
         if context.get("simulate_wrong_signer_allowed", False):
             wrong_signer_rejected = False
-        assert wrong_signer_rejected, "Negative control failed: wrong signer binding must be rejected"
+        if not wrong_signer_rejected:
+            raise RuntimeError("Negative control failed: wrong signer binding must be rejected")
         adversarial_tests.append({
             "test_id": "adversarial_wrong_signer_rejected",
             "attack_class": "wrong_signer_binding",
@@ -787,7 +856,8 @@ class AttestationChallengerWorkflow(IndependentChallengerWorkflow):
         nullification_enforced = (res_nullified.outcome == CheckOutcome.FAIL)
         if context.get("simulate_nullification_bypass", False):
             nullification_enforced = False
-        assert nullification_enforced, "Negative control failed: nullified attestation must be rejected"
+        if not nullification_enforced:
+            raise RuntimeError("Negative control failed: nullified attestation must be rejected")
         adversarial_tests.append({
             "test_id": "adversarial_nullification_rejected",
             "attack_class": "nullification_enforcement",
@@ -801,7 +871,8 @@ class AttestationChallengerWorkflow(IndependentChallengerWorkflow):
         ev_boundary["attestation_document"] = {"pcrs": {"pcr0": valid_pcr0.hex()}, "timestamp": now + 300}  # exact max skew
         res_boundary = self.backend.verify_temporal_validity(ev_boundary, now)
         boundary_accepted = (res_boundary.outcome == CheckOutcome.PASS)
-        assert boundary_accepted, "Negative control failed: exact skew boundary must be accepted"
+        if not boundary_accepted:
+            raise RuntimeError("Negative control failed: exact skew boundary must be accepted")
         adversarial_tests.append({
             "test_id": "adversarial_timestamp_inclusive_boundary_accepted",
             "attack_class": "boundary_timestamps",
@@ -821,7 +892,8 @@ class AttestationChallengerWorkflow(IndependentChallengerWorkflow):
         dereg_rejected = (res_dereg.outcome == CheckOutcome.FAIL)
         if context.get("simulate_deregistered_allowed", False):
             dereg_rejected = False
-        assert dereg_rejected, "Negative control failed: deregistered signer must be rejected"
+        if not dereg_rejected:
+            raise RuntimeError("Negative control failed: deregistered signer must be rejected")
         adversarial_tests.append({
             "test_id": "adversarial_deregistered_signer_rejected",
             "attack_class": "cache_invalidation_deregistration",
@@ -843,7 +915,8 @@ class AttestationChallengerWorkflow(IndependentChallengerWorkflow):
         if context.get("simulate_tampered_hint_allowed", False):
             hint_tampered_rejected = False
 
-        assert hint_tampered_rejected, "Negative control failed: tampered P-384 hint must be rejected"
+        if not hint_tampered_rejected:
+            raise RuntimeError("Negative control failed: tampered P-384 hint must be rejected")
         adversarial_tests.append({
             "test_id": "adversarial_tampered_hint_transcript_rejected",
             "attack_class": "malformed_inverse_hints",
@@ -864,18 +937,19 @@ class AttestationChallengerWorkflow(IndependentChallengerWorkflow):
         passed_names = [t["test_id"] for t in adversarial_tests if t["passed"]]
 
         claims = [
-            f"Independent challenger executed {len(adversarial_tests)} adversarial negative controls across 10 attack classes",
-            f"All {len(passed_names)} security boundaries defended against malformed inputs and state tampering",
-            f"Adversarial execution manifest committed with digest: {manifest_digest[:16]}...",
+            f"Local backend simulation exercised {len(adversarial_tests)} adversarial controls across 10 modeled attack classes",
+            f"{len(passed_names)} modeled controls passed against the local fixture; target behavior is not established",
+            f"Local simulation manifest digest: {manifest_digest[:16]}...",
         ]
         evidence_refs = [f"EVID-TEE-CHALLENGE-{manifest_digest[:16]}"]
 
         return {
-            "status": "COMPLETED_VERIFIED",
-            "summary": f"Independent Challenger proved INV-MULTIPROOF-03 holds against all {len(adversarial_tests)} executable adversarial attack classes",
+            "status": "COMPLETED_WITH_LIMITATIONS",
+            "summary": f"Independent Challenger simulated {len(adversarial_tests)} INV-MULTIPROOF-03 attack controls locally; target behavior is not verified",
             "claims": claims,
             "evidence_refs": evidence_refs,
-            "tests": TaskTests(passed=passed_names, failed=[]),
+            "tests": TaskTests(passed=[], failed=[]),
+            "limitations": ["Controls use local backend fixtures and do not execute against target contracts, deployed TEE hardware, or authenticated attestation evidence"],
             "next_action": "Proceed to staging admission and Multiproof TEE operation completion report",
         }
 
@@ -896,7 +970,7 @@ class MultiproofTEEPipeline(CanonicalAdaptivePipeline):
     def __init__(
         self,
         adapter: Optional[ArchitectureAdapter] = None,
-        workspace_root: Path | str = "/home/nova/projects/cantina",
+        workspace_root: Path | str = ".",
         backend: Optional[TEEVerificationBackend] = None,
     ):
         bound_adapter = adapter or CantinaBountyAdapter(workspace_root)

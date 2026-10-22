@@ -1,0 +1,52 @@
+{
+  "timestamp": "2026-10-22T00:47:49Z",
+  "toolchain": {
+    "forge": {
+      "path": "/home/nova/.foundry/bin/forge",
+      "version": "forge Version: 1.8.5\nCommit SHA: 51a52c59cffd940f76eddd0b4bb1791aa4b5ac7f\nBuild Timestamp: 2026-10-05T17:18:54.332175693Z (1791220734)\nBuild Profile: dist"
+    },
+    "svm_solc": {
+      "0.8.15": {
+        "path": "/home/nova/.local/share/svm/0.8.15/solc-0.8.15",
+        "version_line": "Version: 0.8.15+commit.e14f2714.Linux.g++"
+      },
+      "0.8.19": {
+        "path": "/home/nova/.local/share/svm/0.8.19/solc-0.8.19",
+        "version_line": "Version: 0.8.19+commit.7dd6d404.Linux.g++"
+      },
+      "0.8.23": {
+        "path": "/home/nova/.local/share/svm/0.8.23/solc-0.8.23",
+        "version_line": "Version: 0.8.23+commit.f704f362.Linux.g++"
+      },
+      "0.8.25": {
+        "path": "/home/nova/.local/share/svm/0.8.25/solc-0.8.25",
+        "version_line": "Version: 0.8.25+commit.b61c2a91.Linux.g++"
+      },
+      "0.8.26": {
+        "path": "/home/nova/.local/share/svm/0.8.26/solc-0.8.26",
+        "version_line": "Version: 0.8.26+commit.8a97fa7a.Linux.g++"
+      },
+      "0.8.37": {
+        "path": "/home/nova/.local/share/svm/0.8.37/solc-0.8.37",
+        "version_line": "Version: 0.8.37+commit.f401782d.Linux.g++"
+      }
+    }
+  },
+  "sample_validation": {
+    "contest_id": 10,
+    "exists": true,
+    "sol_file_count": 24,
+    "sample_files": [
+      "Web3Bugs/contracts/10/contracts/contracts/StakingToken.sol",
+      "Web3Bugs/contracts/10/contracts/contracts/RewardsToken.sol",
+      "Web3Bugs/contracts/10/contracts/contracts/Mainframe.sol",
+      "Web3Bugs/contracts/10/contracts/contracts/mock/MockNFT.sol",
+      "Web3Bugs/contracts/10/contracts/contracts/mock/MockERC20.sol"
+    ],
+    "sample_pragma": [
+      "pragma solidity ^0.7.0;"
+    ],
+    "syntax_verified": true
+  },
+  "status": "BASELINE_ESTABLISHED"
+}

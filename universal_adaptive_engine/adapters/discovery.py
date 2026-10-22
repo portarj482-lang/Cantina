@@ -12,7 +12,7 @@ class TargetDiscoveryAdapter(BaseArchitectureAdapter):
 
     def __init__(
         self,
-        workspace_root: Path | str = "/home/nova/projects/cantina",
+        workspace_root: Path | str = ".",
         target_root: Optional[Path | str] = None,
     ):
         super().__init__(name="target-discovery-adapter", version="1.0.0")

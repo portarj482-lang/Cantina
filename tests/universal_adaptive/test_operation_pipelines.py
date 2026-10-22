@@ -76,21 +76,21 @@ class TestOperationPipelines(unittest.TestCase):
             workspace_root=self.workspace_root,
         )
         report = pipeline.execute({"goal": "Verify Fault Dispute Invariant INV-DISPUTE-01"})
-        self.assertEqual(report.overall_status, "COMPLETED_VERIFIED")
+        self.assertEqual(report.overall_status, "COMPLETED_WITH_LIMITATIONS")
         self.assertEqual(len(report.stage_handoffs), 14)
 
         # Check specialized stages
-        self.assertEqual(report.stage_handoffs["DISCOVERY"]["status"], "COMPLETED_VERIFIED")
+        self.assertEqual(report.stage_handoffs["DISCOVERY"]["status"], "COMPLETED_WITH_LIMITATIONS")
         self.assertEqual(report.stage_handoffs["DISCOVERY"]["agent_role"], "Dispute Invariant Analyst (G4)")
         self.assertTrue(len(report.stage_handoffs["DISCOVERY"]["evidence_refs"]) > 0)
 
-        self.assertEqual(report.stage_handoffs["AUTHORIZATION_CHECK"]["status"], "COMPLETED_VERIFIED")
+        self.assertEqual(report.stage_handoffs["AUTHORIZATION_CHECK"]["status"], "COMPLETED_WITH_LIMITATIONS")
         self.assertEqual(report.stage_handoffs["AUTHORIZATION_CHECK"]["agent_role"], "Dispute Security Reviewer")
 
-        self.assertEqual(report.stage_handoffs["VERIFICATION"]["status"], "COMPLETED_VERIFIED")
+        self.assertEqual(report.stage_handoffs["VERIFICATION"]["status"], "COMPLETED_WITH_LIMITATIONS")
         self.assertEqual(report.stage_handoffs["VERIFICATION"]["agent_role"], "Dispute Prove Verifier (#11 & #12)")
 
-        self.assertEqual(report.stage_handoffs["INDEPENDENT_REVIEW"]["status"], "COMPLETED_VERIFIED")
+        self.assertEqual(report.stage_handoffs["INDEPENDENT_REVIEW"]["status"], "COMPLETED_WITH_LIMITATIONS")
         self.assertEqual(report.stage_handoffs["INDEPENDENT_REVIEW"]["agent_role"], "Dispute Finalize Challenger (#22 & #23)")
 
         # Skipped deployment stage
@@ -127,20 +127,20 @@ class TestOperationPipelines(unittest.TestCase):
             workspace_root=self.workspace_root,
         )
         report = pipeline.execute({"goal": "Verify Multiproof TEE Attestation Invariant INV-MULTIPROOF-03"})
-        self.assertEqual(report.overall_status, "COMPLETED_VERIFIED")
+        self.assertEqual(report.overall_status, "COMPLETED_WITH_LIMITATIONS")
         self.assertEqual(len(report.stage_handoffs), 14)
 
         # Check specialized stages
-        self.assertEqual(report.stage_handoffs["DISCOVERY"]["status"], "COMPLETED_VERIFIED")
+        self.assertEqual(report.stage_handoffs["DISCOVERY"]["status"], "COMPLETED_WITH_LIMITATIONS")
         self.assertEqual(report.stage_handoffs["DISCOVERY"]["agent_role"], "Multiproof TEE Invariant Analyst (G6)")
 
-        self.assertEqual(report.stage_handoffs["AUTHORIZATION_CHECK"]["status"], "COMPLETED_VERIFIED")
+        self.assertEqual(report.stage_handoffs["AUTHORIZATION_CHECK"]["status"], "COMPLETED_WITH_LIMITATIONS")
         self.assertEqual(report.stage_handoffs["AUTHORIZATION_CHECK"]["agent_role"], "Multiproof TEE Security Reviewer")
 
-        self.assertEqual(report.stage_handoffs["VERIFICATION"]["status"], "COMPLETED_VERIFIED")
+        self.assertEqual(report.stage_handoffs["VERIFICATION"]["status"], "COMPLETED_WITH_LIMITATIONS")
         self.assertEqual(report.stage_handoffs["VERIFICATION"]["agent_role"], "TEE Register Verifier (#15 & #16)")
 
-        self.assertEqual(report.stage_handoffs["INDEPENDENT_REVIEW"]["status"], "COMPLETED_VERIFIED")
+        self.assertEqual(report.stage_handoffs["INDEPENDENT_REVIEW"]["status"], "COMPLETED_WITH_LIMITATIONS")
         self.assertEqual(report.stage_handoffs["INDEPENDENT_REVIEW"]["agent_role"], "Attestation Challenger (#17, #18, #19)")
 
         self.assertEqual(report.stage_handoffs["DEPLOYMENT"]["status"], "NOT_RUN")
@@ -178,9 +178,9 @@ class TestOperationPipelines(unittest.TestCase):
     def test_orchestrator_run_operation(self):
         orchestrator = UniversalAdaptiveOrchestrator(workspace_root=self.workspace_root)
         expected_statuses = {
-            "dispute": "COMPLETED_VERIFIED",
+            "dispute": "COMPLETED_WITH_LIMITATIONS",
             "delayed-weth": "COMPLETED_WITH_LIMITATIONS",
-            "multiproof-tee": "COMPLETED_VERIFIED",
+            "multiproof-tee": "COMPLETED_WITH_LIMITATIONS",
             "rpc-governance": "COMPLETED_WITH_LIMITATIONS",
         }
         for op, expected_status in expected_statuses.items():
@@ -274,13 +274,13 @@ class TestOperationPipelines(unittest.TestCase):
         # Singular scalar boundary (0 scalar cannot be inverted)
         ctx_singular = dict(valid_prior, sample_scalar=0)
         h_singular = challenger.execute(ctx_singular)
-        self.assertEqual(h_singular.status, "COMPLETED_VERIFIED")
+        self.assertEqual(h_singular.status, "COMPLETED_WITH_LIMITATIONS")
 
         # Boundary scalar (>= p_384 modulus)
         p_384 = (2**384) - (2**128) - (2**96) + (2**32) - 1
         ctx_modulus = dict(valid_prior, sample_scalar=p_384)
         h_modulus = challenger.execute(ctx_modulus)
-        self.assertEqual(h_modulus.status, "COMPLETED_VERIFIED")
+        self.assertEqual(h_modulus.status, "COMPLETED_WITH_LIMITATIONS")
 
         # Attack: future attestation allowed
         ctx_future = dict(valid_prior, simulate_future_attestation_allowed=True)

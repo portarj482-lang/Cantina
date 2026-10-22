@@ -26,7 +26,7 @@ class KnowledgeCuratorWorkflow(AgentWorkflow):
         )
 
     def run_step(self, context: dict[str, Any]) -> dict[str, Any]:
-        workspace_root = Path(context.get("workspace_root", "/home/nova/projects/cantina"))
+        workspace_root = Path(context.get("workspace_root", "."))
         artifact_to_hash = context.get("curate_file", "universal_adaptive_intelligence_architecture.md")
 
         p = workspace_root / artifact_to_hash

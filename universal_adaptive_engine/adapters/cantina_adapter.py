@@ -4,7 +4,7 @@ import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from universal_adaptive_engine.adapters.protocol import (
     BaseArchitectureAdapter,
@@ -19,7 +19,7 @@ class CantinaBountyAdapter(BaseArchitectureAdapter):
 
     def __init__(
         self,
-        workspace_root: Path | str = "/home/nova/projects/cantina",
+        workspace_root: Path | str = ".",
         trusted_scope_sha256: Optional[str] = None,
     ):
         super().__init__(name="cantina-bounty-adapter", version="1.0.0")

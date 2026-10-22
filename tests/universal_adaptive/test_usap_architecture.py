@@ -255,6 +255,64 @@ class TestUSAPArchitecture(unittest.TestCase):
         self.assertEqual(finding.status, TargetResultStatus.FAIL)
         self.assertEqual(finding.property_violated, "INV-DISPUTE-01")
 
+    def test_workspace_bounties_multi_manifest_discovery(self):
+        """Test live multi-manifest discovery across workspace bounties: base, agglayer, and pump-fun."""
+        # Base: EVM + Rust (contracts/foundry.toml, base/Cargo.toml)
+        base_tc = TargetContextResolver.resolve(context={"bounty_slug": "base"}, workspace_root=self.workspace_root)
+        self.assertEqual(base_tc.architecture, "evm")
+        self.assertIn("solidity", base_tc.languages)
+        self.assertIn("rust", base_tc.languages)
+        self.assertTrue(base_tc.has_capability("evm.foundry"))
+        self.assertTrue(base_tc.has_capability("rust.cargo"))
+
+        # Agglayer: EVM (ulxly-contracts/hardhat.config.ts, vault-bridge/foundry.toml)
+        agg_tc = TargetContextResolver.resolve(context={"bounty_slug": "agglayer"}, workspace_root=self.workspace_root)
+        self.assertEqual(agg_tc.architecture, "evm")
+        self.assertIn("solidity", agg_tc.languages)
+        self.assertTrue(agg_tc.has_capability("evm.foundry"))
+        self.assertTrue(agg_tc.has_capability("evm.hardhat"))
+
+        # Pump-fun: Solana / Rust (pump-rust-client/Cargo.toml)
+        pump_tc = TargetContextResolver.resolve(context={"bounty_slug": "pump-fun"}, workspace_root=self.workspace_root)
+        self.assertEqual(pump_tc.architecture, "solana")
+        self.assertIn("rust", pump_tc.languages)
+        self.assertTrue(pump_tc.has_capability("programs.solana"))
+
+    def test_cross_target_domain_operation_inapplicability(self):
+        """Test that running domain operations on incompatible targets cleanly reports NOT_APPLICABLE without falsification."""
+        from universal_adaptive_engine.workflows.operations import (
+            DisputeSystemPipeline,
+            DelayedWETHSolvencyPipeline,
+            MultiproofTEEPipeline,
+        )
+
+        pump_root = self.workspace_root / "bounties" / "pump-fun"
+        self.assertTrue(pump_root.exists())
+
+        # Dispute on pump-fun
+        pipe_disp = DisputeSystemPipeline(workspace_root=self.workspace_root)
+        rep_disp = pipe_disp.execute({"target_root": str(pump_root), "bounty_slug": "pump-fun"})
+        self.assertEqual(rep_disp.overall_status, "COMPLETED_WITH_LIMITATIONS")
+        self.assertEqual(rep_disp.stage_handoffs["DISCOVERY"]["status"], "COMPLETED_WITH_LIMITATIONS")
+        self.assertIn("NOT_APPLICABLE", rep_disp.stage_handoffs["DISCOVERY"]["summary"])
+        self.assertIn("NOT_APPLICABLE", rep_disp.stage_handoffs["VERIFICATION"]["summary"])
+        self.assertIn("NOT_APPLICABLE", rep_disp.stage_handoffs["INDEPENDENT_REVIEW"]["summary"])
+
+        # DelayedWETH on pump-fun
+        pipe_weth = DelayedWETHSolvencyPipeline(workspace_root=self.workspace_root)
+        rep_weth = pipe_weth.execute({"target_root": str(pump_root), "bounty_slug": "pump-fun"})
+        self.assertEqual(rep_weth.overall_status, "COMPLETED_WITH_LIMITATIONS")
+        self.assertIn("NOT_APPLICABLE", rep_weth.stage_handoffs["DISCOVERY"]["summary"])
+        self.assertIn("NOT_APPLICABLE", rep_weth.stage_handoffs["INDEPENDENT_REVIEW"]["summary"])
+
+        # Multiproof TEE on pump-fun
+        pipe_tee = MultiproofTEEPipeline(workspace_root=self.workspace_root)
+        rep_tee = pipe_tee.execute({"target_root": str(pump_root), "bounty_slug": "pump-fun"})
+        self.assertEqual(rep_tee.overall_status, "COMPLETED_WITH_LIMITATIONS")
+        self.assertIn("NOT_APPLICABLE", rep_tee.stage_handoffs["DISCOVERY"]["summary"])
+        self.assertIn("NOT_APPLICABLE", rep_tee.stage_handoffs["VERIFICATION"]["summary"])
+        self.assertIn("NOT_APPLICABLE", rep_tee.stage_handoffs["INDEPENDENT_REVIEW"]["summary"])
+
 
 if __name__ == "__main__":
     unittest.main()

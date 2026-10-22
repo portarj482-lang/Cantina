@@ -25,7 +25,7 @@ class RepositoryInvestigatorWorkflow(AgentWorkflow):
 
     def run_step(self, context: dict[str, Any]) -> dict[str, Any]:
         targets = context.get("target_files", ["INSTRUCTIONS.md", "universal_adaptive_intelligence_architecture.md"])
-        workspace_root = Path(context.get("workspace_root", "/home/nova/projects/cantina"))
+        workspace_root = Path(context.get("workspace_root", "."))
 
         inspected = []
         missing = []

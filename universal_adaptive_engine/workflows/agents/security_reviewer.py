@@ -25,7 +25,7 @@ class SecurityReviewerWorkflow(AgentWorkflow):
         )
 
     def run_step(self, context: dict[str, Any]) -> dict[str, Any]:
-        workspace_root = Path(context.get("workspace_root", "/home/nova/projects/cantina")).resolve()
+        workspace_root = Path(context.get("workspace_root", ".")).resolve()
         requested_paths = context.get("target_paths", [str(workspace_root)])
         forbidden_actions = context.get("forbidden_actions", [
             "broadcast_transaction",

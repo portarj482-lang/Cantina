@@ -79,7 +79,7 @@ def list_available_operations() -> list[str]:
 def get_operation_pipeline(
     name: str,
     adapter: Optional[ArchitectureAdapter] = None,
-    workspace_root: Path | str = "/home/nova/projects/cantina",
+    workspace_root: Path | str = ".",
 ) -> AgentPipeline:
     """Factory creating a specialized end-to-end operation pipeline by name.
 

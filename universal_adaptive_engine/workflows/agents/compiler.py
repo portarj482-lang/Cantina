@@ -26,7 +26,7 @@ class DomainCompilerEngineerWorkflow(AgentWorkflow):
         )
 
     def run_step(self, context: dict[str, Any]) -> dict[str, Any]:
-        workspace_root = Path(context.get("workspace_root", "/home/nova/projects/cantina"))
+        workspace_root = Path(context.get("workspace_root", "."))
         python_files = context.get("check_syntax_files", [
             "universal_adaptive_engine/cli.py",
             "universal_adaptive_engine/harness/orchestrator.py",

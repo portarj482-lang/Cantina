@@ -82,15 +82,35 @@ class RPCGovernanceAnalystWorkflow(ArchitectureAnalystWorkflow):
         ).resolve()
         task_id = context.get("task_id", "TASK-RPC-002")
 
-        scope_file = workspace_root / "bounties/base/scope.md"
-        scope_present = scope_file.exists()
+        tc = context.get("target_context")
+        if not tc:
+            from universal_adaptive_engine.models.target_context import TargetContextResolver
+            tc = TargetContextResolver.resolve(context, workspace_root)
 
-        inspected = [str(scope_file.relative_to(workspace_root))] if scope_present else []
+        scope_file = None
+        if tc and tc.scope_manifest and tc.scope_manifest.exists():
+            scope_file = tc.scope_manifest
+        elif tc and (tc.target_root / "scope.md").exists():
+            scope_file = tc.target_root / "scope.md"
+        else:
+            bounty = context.get("bounty_slug") or (tc.bounty_slug if tc else "base")
+            candidate = workspace_root / "bounties" / bounty / "scope.md"
+            if candidate.exists():
+                scope_file = candidate
+            else:
+                scope_file = workspace_root / "bounties" / "base" / "scope.md"
+
+        scope_present = scope_file.exists() if scope_file else False
+        try:
+            inspected = [str(scope_file.relative_to(workspace_root))] if scope_present else []
+        except ValueError:
+            inspected = [str(scope_file)] if scope_present else []
+
         status = "COMPLETED_WITH_LIMITATIONS"
-        limitations = [] if scope_present else ["scope.md was not located at expected path"]
+        limitations = [] if scope_present else [f"scope.md was not located for target '{tc.target_id if tc else 'unknown'}'"]
 
         claims = [
-            f"Scope file exists at {scope_file}; its contents and target authorization have not been validated" if scope_present else "Scope Agent recorded limitation: scope.md missing",
+            f"Scope file exists at {scope_file}; its contents and target authorization have not been validated" if scope_present else f"Scope Agent recorded limitation: scope.md missing for target '{tc.target_id if tc else 'unknown'}'",
             "Network topology and route constraints were not probed by this workflow",
             "Ports 111, 445, and 139 require explicit target authorization before probing",
         ]

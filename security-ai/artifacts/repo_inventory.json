@@ -1,0 +1,99 @@
+{
+  "timestamp": "2026-10-22T00:46:49Z",
+  "workspace_root": "/home/nova/projects/solidity-security-ai",
+  "repositories": {
+    "solidity": {
+      "role": "Compiler Intelligence & Formal Semantics",
+      "git": {
+        "branch": "develop",
+        "commit": "f8140416166310df5dc82f2b1c18094650c14842",
+        "commit_date": "2026-10-21 21:27:48 +0200",
+        "remote": "https://github.com/argotorg/solidity.git"
+      },
+      "license": {
+        "file": "LICENSE.txt",
+        "header": [
+          "GNU GENERAL PUBLIC LICENSE",
+          "Version 3, 29 June 2007",
+          "Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>",
+          "Everyone is permitted to copy and distribute verbatim copies"
+        ]
+      },
+      "layout": {
+        "directories": [
+          "cmake",
+          "deps",
+          "docs",
+          "libevmasm",
+          "liblangutil",
+          "libsmtutil",
+          "libsolc",
+          "libsolidity",
+          "libsolutil",
+          "libyul",
+          "scripts",
+          "snap",
+          "solc",
+          "test",
+          "tools"
+        ],
+        "files": [
+          "CMakeLists.txt",
+          "CODE_OF_CONDUCT.md",
+          "CODING_STYLE.md",
+          "CONTRIBUTING.md",
+          "Changelog.md",
+          "LICENSE.txt",
+          "README.md",
+          "ReleaseChecklist.md",
+          "ReviewChecklist.md",
+          "SECURITY.md",
+          "funding.json"
+        ]
+      },
+      "build_instructions": "cmake -B build; cmake --build build",
+      "test_commands": [
+        "./build/test/soltest",
+        "scripts/tests.sh"
+      ]
+    },
+    "Web3Bugs": {
+      "role": "Vulnerability Corpus & Oracle Benchmarking",
+      "git": {
+        "branch": "main",
+        "commit": "fd8544e84f0d6cea4b4d6a44ee62d8f7623648f4",
+        "commit_date": "2025-06-19 14:26:27 +0800",
+        "remote": "https://github.com/ZhangZhuoSJTU/Web3Bugs.git"
+      },
+      "license": {
+        "file": "LICENSE",
+        "header": [
+          "MIT License",
+          "Copyright (c) 2025 Zhuo Zhang",
+          "Permission is hereby granted, free of charge, to any person obtaining a copy"
+        ]
+      },
+      "layout": {
+        "directories": [
+          "contracts",
+          "docs",
+          "papers",
+          "reports",
+          "resources",
+          "results",
+          "scripts"
+        ],
+        "files": [
+          "LICENSE",
+          "README.md"
+        ]
+      },
+      "build_instructions": "npm install or hardhat/foundry compile per contract subproject",
+      "test_commands": [
+        "npm test",
+        "npx hardhat test",
+        "forge test"
+      ]
+    }
+  }
+}

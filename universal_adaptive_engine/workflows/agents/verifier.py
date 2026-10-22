@@ -27,7 +27,7 @@ class VerificationEngineerWorkflow(AgentWorkflow):
 
     def run_step(self, context: dict[str, Any]) -> dict[str, Any]:
         test_commands = context.get("test_commands", [])
-        workspace_root = context.get("workspace_root", "/home/nova/projects/cantina")
+        workspace_root = context.get("workspace_root", ".")
 
         passed_tests = []
         failed_tests = []

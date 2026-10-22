@@ -106,7 +106,7 @@ class TargetContextResolver:
         workspace_root: Optional[Path | str] = None,
     ) -> TargetContext:
         ctx = dict(context or {})
-        ws = Path(workspace_root or ctx.get("workspace_root") or "/home/nova/projects/cantina").resolve()
+        ws = Path(workspace_root or ctx.get("workspace_root") or ".").resolve()
         session_id = ctx.get("session_id") or os.environ.get("ANTIGRAVITY_SESSION_ID") or uuid.uuid4().hex[:8]
 
         # 1. Resolve target root and bounty slug

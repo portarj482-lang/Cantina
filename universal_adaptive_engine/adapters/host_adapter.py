@@ -21,7 +21,7 @@ from universal_adaptive_engine.models.evidence import EvidenceRecord
 class HostEnvironmentAdapter(BaseArchitectureAdapter):
     """Adapter that discovers and interacts with the host Linux / POSIX runtime."""
 
-    def __init__(self, workspace_root: Path | str = "/home/nova/projects/cantina"):
+    def __init__(self, workspace_root: Path | str = "."):
         super().__init__(name="host-environment-adapter", version="1.0.0")
         self.workspace_root = Path(workspace_root).resolve()
 

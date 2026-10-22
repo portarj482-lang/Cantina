@@ -91,7 +91,7 @@ class UniversalAdaptiveOrchestrator:
 
     def __init__(
         self,
-        workspace_root: Path | str = "/home/nova/projects/cantina",
+        workspace_root: Path | str = ".",
         storage_dir: Optional[Path | str] = None,
     ):
         self.workspace_root = Path(workspace_root).resolve()

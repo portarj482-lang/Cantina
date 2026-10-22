@@ -36,7 +36,7 @@ class CanonicalAdaptivePipeline(AgentPipeline):
         self,
         name: str = "Canonical-Universal-Adaptive-Pipeline",
         adapter: Optional[ArchitectureAdapter] = None,
-        workspace_root: Path | str = "/home/nova/projects/cantina",
+        workspace_root: Path | str = ".",
     ):
         super().__init__(name=name, adapter=adapter)
         self.workspace_root = Path(workspace_root).resolve()

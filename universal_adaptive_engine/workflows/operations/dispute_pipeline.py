@@ -45,7 +45,7 @@ class DisputeAnalystWorkflow(ArchitectureAnalystWorkflow):
     def run_step(self, context: dict[str, Any]) -> dict[str, Any]:
         workspace_root = Path(
             context.get("workspace_root")
-            or getattr(self.adapter, "workspace_root", "/home/nova/projects/cantina")
+            or getattr(self.adapter, "workspace_root", ".")
         ).resolve()
         task_id = context.get("task_id", "TASK-DISP-001")
 
@@ -121,7 +121,8 @@ class DisputeAnalystWorkflow(ArchitectureAnalystWorkflow):
             if "finalizeWithdrawalTransaction" in content:
                 extracted_params["finalizeWithdrawalTransaction_present"] = True
 
-        status = "COMPLETED_VERIFIED"
+        missing = [c for c in ["OptimismPortal2.sol", "DisputeGameFactory.sol", "AnchorStateRegistry.sol"] if not any(c in p.name for p in found_contracts)]
+        status = "COMPLETED_WITH_LIMITATIONS"
         artifacts = [str(Path(f)) for f in inspected]
 
         claims = [
@@ -139,9 +140,9 @@ class DisputeAnalystWorkflow(ArchitectureAnalystWorkflow):
             "evidence_refs": evidence_refs,
             "files_inspected": inspected,
             "artifacts": artifacts,
-            "limitations": [],
+            "limitations": ([f"Missing files: {missing}"] if missing else []) + ["Local source inspection does not establish authenticated source provenance, deployed bytecode, authorized scope, or invariant behavior"],
             "next_action": "Proceed to security review and fork-safe boundary check",
-            "tests": TaskTests(passed=["dispute_contract_discovery", "invariant_parameter_extraction"]),
+            "tests": TaskTests(passed=[], failed=[]),
         }
 
 
@@ -159,20 +160,22 @@ class DisputeSecurityReviewerWorkflow(SecurityReviewerWorkflow):
         task_id = context.get("task_id", "TASK-DISP-002")
 
         claims = [
-            "Audit Agent ruling FORK-SAFE enforced: all dispute invariant tests restricted to local EVM sandbox",
-            "Scope Agent verified OptimismPortal2 and dispute game factory are within Cantina Base bounty scope",
-            "Reentrancy guard and CEI ordering verified in withdrawal finalization pathway",
+            "No test or fork was executed by this workflow",
+            "Scope authorization was not validated by this workflow",
+            "Reentrancy and CEI behavior were not executed or verified",
         ]
         evidence_refs = [f"EVID-DISP-SEC-AUTH-{task_id}"]
 
         return {
-            "status": "COMPLETED_VERIFIED",
-            "summary": "Dispute Security Reviewer approved execution under FORK-SAFE audit constraints",
+            "status": "COMPLETED_WITH_LIMITATIONS",
+            "verification_state": "NOT_EXECUTED",
+            "limitations": ["This workflow does not validate scope or run contract tests; no authorization or invariant result is established."],
+            "summary": "Dispute security constraints were described; authorization and behavior remain unverified",
             "claims": claims,
             "evidence_refs": evidence_refs,
             "security_concerns": ["Zero broadcast transactions allowed on live Base/Ethereum mainnet"],
             "next_action": "Proceed to deterministic verification and withdrawal trie testing",
-            "tests": TaskTests(passed=["dispute_scope_authorization", "fork_safe_audit_gate", "cei_reentrancy_precondition"]),
+            "tests": TaskTests(passed=[], failed=[]),
         }
 
 
@@ -207,27 +210,21 @@ class DisputeProveVerifierWorkflow(VerificationEngineerWorkflow):
         # 1. provenWithdrawals storage binding
         # 2. disputeGame DEFENDER_WINS assertion
         # 3. proofMaturityDelaySeconds enforcement
-        checks_passed = [
-            "withdrawal_hash_commitment_validity",
-            "dispute_game_status_defender_wins_gate",
-            "anchor_state_root_claim_consistency",
-            "proof_maturity_delay_elapsed_assertion",
-            "finalized_withdrawals_monotonic_flag",
-        ]
-
         claims = [
-            "Dispute prove verifier validated withdrawal Merkle trie proof commitment",
-            "Dispute game resolution status DEFENDER_WINS verified as non-negotiable prerequisite",
-            "Monotonic finalization flag finalizedWithdrawals[hash] confirmed committed under CEI",
+            "No withdrawal proof, dispute game, or portal transaction was executed by this workflow",
+            "Proof commitment, game status, maturity, and replay behavior remain unverified hypotheses",
+            "The returned checklist is not evidence of deployed contract behavior",
         ]
         evidence_refs = [f"EVID-DISP-VERIFY-{task_id}"]
 
         return {
-            "status": "COMPLETED_VERIFIED",
-            "summary": f"Dispute Prove Verifier passed all {len(checks_passed)} invariant checks for INV-DISPUTE-01",
+            "status": "COMPLETED_WITH_LIMITATIONS",
+            "verification_state": "NOT_EXECUTED",
+            "limitations": ["This verifier is a checklist stub; no contract tests or proof validation were run."],
+            "summary": "Dispute verifier checklist generated; no invariant checks were executed",
             "claims": claims,
             "evidence_refs": evidence_refs,
-            "tests": TaskTests(passed=checks_passed, failed=[]),
+            "tests": TaskTests(passed=[], failed=[]),
             "next_action": "Submit slice to independent challenger for adversarial falsification review",
         }
 
@@ -275,28 +272,32 @@ class DisputeFinalizeChallengerWorkflow(IndependentChallengerWorkflow):
         early_finalization_reverts = current_time_early < (proven_time + maturity_delay)
         if context.get("simulate_premature_bypass", False):
             early_finalization_reverts = False
-        assert early_finalization_reverts, "Negative control failed: early finalization must revert"
+        if not early_finalization_reverts:
+            raise RuntimeError("Negative control failed: early finalization must revert")
 
         # Negative Control 2: Game resolved as CHALLENGER_WINS (status enum 1 vs DEFENDER_WINS enum 2)
         game_status = context.get("game_status", "CHALLENGER_WINS")
         status_gate_blocks = (game_status != "DEFENDER_WINS")
         if context.get("simulate_unresolved_game_allowed", False):
             status_gate_blocks = False
-        assert status_gate_blocks, "Negative control failed: CHALLENGER_WINS game must block finalization"
+        if not status_gate_blocks:
+            raise RuntimeError("Negative control failed: CHALLENGER_WINS game must block finalization")
 
         # Negative Control 3: Blacklisted dispute game
         blacklist_map = context.get("blacklist_map", {"0xBadDisputeGame": True})
         blacklisted_game_blocks = blacklist_map.get("0xBadDisputeGame", False)
         if context.get("simulate_blacklisted_allowed", False):
             blacklisted_game_blocks = False
-        assert blacklisted_game_blocks, "Negative control failed: blacklisted game must block finalization"
+        if not blacklisted_game_blocks:
+            raise RuntimeError("Negative control failed: blacklisted game must block finalization")
 
         # Negative Control 4: Replay attack on finalized withdrawal
         finalized_map = context.get("finalized_map", {"0xWithdrawalHashABC": True})
         replay_blocks = finalized_map.get("0xWithdrawalHashABC", False)
         if context.get("simulate_replay_allowed", False):
             replay_blocks = False
-        assert replay_blocks, "Negative control failed: second finalization attempt must revert"
+        if not replay_blocks:
+            raise RuntimeError("Negative control failed: second finalization attempt must revert")
 
         # Cryptographic negative control digest
         neg_control_data = f"{early_finalization_reverts}:{status_gate_blocks}:{blacklisted_game_blocks}:{replay_blocks}".encode("utf-8")
@@ -310,18 +311,20 @@ class DisputeFinalizeChallengerWorkflow(IndependentChallengerWorkflow):
         ]
 
         claims = [
-            "Independent challenger verified 4 adversarial negative controls on withdrawal finalization",
-            f"Falsification control digest committed: {neg_control_digest[:16]}...",
-            "INV-DISPUTE-01 monotonicity rigorously defended against state manipulation attacks",
+            "Simulated negative-control predicates evaluated; no contract execution was performed",
+            f"Local simulation digest (not externally committed): {neg_control_digest[:16]}...",
+            "Simulated predicates only; withdrawal finalization behavior remains unverified",
         ]
         evidence_refs = [f"EVID-DISP-CHALLENGE-{task_id}"]
 
         return {
-            "status": "COMPLETED_VERIFIED",
-            "summary": "Independent Challenger proved INV-DISPUTE-01 monotonicity holds against all 4 adversarial attack vectors",
+            "status": "COMPLETED_WITH_LIMITATIONS",
+            "verification_state": "NOT_EXECUTED",
+            "limitations": ["The workflow evaluates local predicates only; authorized contract tests are required to verify target behavior."],
+            "summary": "Simulation completed; INV-DISPUTE-01 remains unverified until contract tests execute",
             "claims": claims,
             "evidence_refs": evidence_refs,
-            "tests": TaskTests(passed=adversarial_tests, failed=[]),
+            "tests": TaskTests(passed=[], failed=[]),
             "next_action": "Proceed to staging admission and dispute operation completion report",
         }
 
@@ -338,7 +341,7 @@ class DisputeSystemPipeline(CanonicalAdaptivePipeline):
     def __init__(
         self,
         adapter: Optional[ArchitectureAdapter] = None,
-        workspace_root: Path | str = "/home/nova/projects/cantina",
+        workspace_root: Path | str = ".",
     ):
         bound_adapter = adapter or CantinaBountyAdapter(workspace_root)
         super().__init__(

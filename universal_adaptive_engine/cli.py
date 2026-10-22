@@ -118,7 +118,8 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    orchestrator = UniversalAdaptiveOrchestrator()
+    project_root = Path(__file__).resolve().parent.parent
+    orchestrator = UniversalAdaptiveOrchestrator(workspace_root=project_root)
 
     if args.command == "discover":
         if getattr(args, "target_root", None) or getattr(args, "bounty", None):

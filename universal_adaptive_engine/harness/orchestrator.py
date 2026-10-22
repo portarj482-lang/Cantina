@@ -10,6 +10,13 @@ from typing import Any, Optional
 
 from universal_adaptive_engine.adapters.host_adapter import HostEnvironmentAdapter
 from universal_adaptive_engine.adapters.cantina_adapter import CantinaBountyAdapter
+from universal_adaptive_engine.providers import (
+    ReasoningProvider,
+    ReasoningRequest,
+    ReasoningResponse,
+    ReasoningPurpose,
+    get_reasoning_provider,
+)
 from universal_adaptive_engine.harness.ledger import TaskLedger
 from universal_adaptive_engine.harness.evidence_store import EvidenceStore
 from universal_adaptive_engine.models.enums import (
@@ -94,6 +101,7 @@ class UniversalAdaptiveOrchestrator:
         self,
         workspace_root: Path | str = ".",
         storage_dir: Optional[Path | str] = None,
+        reasoning_provider: Optional[ReasoningProvider] = None,
     ):
         self.workspace_root = Path(workspace_root).resolve()
         self.storage_dir = Path(storage_dir) if storage_dir else self.workspace_root / ".orchestrator_state"
@@ -103,6 +111,57 @@ class UniversalAdaptiveOrchestrator:
         self.evidence_store = EvidenceStore(self.storage_dir / "evidence.json")
         self.host_adapter = HostEnvironmentAdapter(self.workspace_root)
         self.cantina_adapter = CantinaBountyAdapter(self.workspace_root)
+        self.reasoning_provider = reasoning_provider or get_reasoning_provider()
+
+    def reason(self, request: ReasoningRequest) -> ReasoningResponse:
+        """Route a structured reasoning task through the configured reasoning provider.
+
+        Enforces local validation: model output is treated strictly as untrusted proposals
+        until validated through local execution policy gates.
+        """
+        return self.reasoning_provider.reason(request)
+
+    def plan_with_reasoning(
+        self,
+        goal: str,
+        target_context: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
+        """Request structured task planning from reasoning engine and validate proposals locally."""
+        request = ReasoningRequest(
+            purpose=ReasoningPurpose.PLANNING,
+            instructions="Decompose the following engineering goal into ordered subtasks with acceptance criteria.",
+            input_data={"goal": goal},
+            target_context=target_context,
+        )
+        schema = {
+            "type": "object",
+            "properties": {
+                "subtasks": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "task_id": {"type": "string"},
+                            "goal": {"type": "string"},
+                            "acceptance_criteria": {"type": "array", "items": {"type": "string"}},
+                            "dependencies": {"type": "array", "items": {"type": "string"}}
+                        },
+                        "required": ["task_id", "goal", "acceptance_criteria", "dependencies"]
+                    }
+                },
+                "rationale": {"type": "string"}
+            },
+            "required": ["subtasks", "rationale"]
+        }
+        resp = self.reasoning_provider.reason_structured(request, schema=schema)
+        return {
+            "status": "REASONING_PROPOSAL_GENERATED" if resp.is_success else "REASONING_FAILED",
+            "authority": "LOCAL_PLATFORM_RETAINS_EXECUTION_GATE",
+            "response": resp,
+            "proposals": resp.structured_output.get("subtasks", []) if resp.structured_output else [],
+            "provider_used": resp.provider,
+            "response_status": resp.status.value,
+        }
 
     def diagnose_blocker(self, error: Exception | str, context: str = "") -> BlockerRecord:
         """Classify errors into canonical BlockerCategory taxonomy and prescribe recovery."""

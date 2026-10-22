@@ -10,6 +10,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from universal_adaptive_engine.harness.orchestrator import UniversalAdaptiveOrchestrator
 from universal_adaptive_engine.adapters.host_adapter import HostEnvironmentAdapter
 from universal_adaptive_engine.adapters.cantina_adapter import CantinaBountyAdapter
+from universal_adaptive_engine.providers import (
+    ReasoningPurpose,
+    ReasoningRequest,
+    ReasoningStatus,
+    get_reasoning_provider,
+)
 from universal_adaptive_engine.models.task import TaskRecord
 from universal_adaptive_engine.models.finding import FindingRecord
 from universal_adaptive_engine.models.adaptation import AdaptationRecord
@@ -59,7 +65,16 @@ def main() -> int:
     slice_parser.add_argument("--slice", default=None, help="Vertical slice name or identifier")
 
     # health-check
-    subparsers.add_parser("health-check", help="Run adapter health checks")
+    subparsers.add_parser("health-check", help="Run adapter and reasoning provider health checks")
+
+    # reason
+    reason_parser = subparsers.add_parser("reason", help="Query the reasoning provider for architectural analysis, planning, or hypothesis generation")
+    reason_parser.add_argument("--prompt", required=True, help="Reasoning prompt / task instruction")
+    reason_parser.add_argument("--purpose", default="planning", choices=[p.value for p in ReasoningPurpose], help="Reasoning task purpose")
+    reason_parser.add_argument("--system-instruction", default=None, help="Optional system instruction")
+    reason_parser.add_argument("--input-file", default=None, help="Optional JSON or text file to include as context")
+    reason_parser.add_argument("--model", default=None, help="Model override (e.g. o3-mini, o1)")
+    reason_parser.add_argument("--json", action="store_true", help="Output full JSON response")
 
     # validate-record
     val_parser = subparsers.add_parser("validate", help="Validate a JSON record against canonical schemas")
@@ -152,9 +167,46 @@ def main() -> int:
     elif args.command == "health-check":
         host_health = orchestrator.host_adapter.health_check()
         cantina_health = orchestrator.cantina_adapter.health_check()
-        output = {"host_adapter": host_health, "cantina_adapter": cantina_health}
+        provider_health = orchestrator.reasoning_provider.health_check().to_dict() if orchestrator.reasoning_provider else {"status": "NOT_CONFIGURED"}
+        output = {
+            "host_adapter": host_health,
+            "cantina_adapter": cantina_health,
+            "reasoning_provider": provider_health,
+        }
         print(json.dumps(output, indent=2))
         return 0 if (host_health["status"] == "HEALTHY" and cantina_health["status"] in ("HEALTHY", "DEGRADED")) else 1
+
+    elif args.command == "reason":
+        context_data = {}
+        if args.input_file:
+            inp_path = Path(args.input_file)
+            if not inp_path.exists():
+                print(f"Error: input file {inp_path} not found", file=sys.stderr)
+                return 1
+            content = inp_path.read_text(encoding="utf-8")
+            try:
+                context_data = json.loads(content)
+            except Exception:
+                context_data = {"raw_content": content}
+
+        req = ReasoningRequest(
+            prompt=args.prompt,
+            purpose=ReasoningPurpose(args.purpose),
+            context=context_data,
+            system_instruction=args.system_instruction,
+            model_override=args.model,
+        )
+
+        resp = orchestrator.reason(req)
+        if args.json:
+            print(json.dumps(resp.to_dict(), indent=2))
+        else:
+            print(f"[{resp.status.value.upper()}] Provider: {resp.provider} (Model: {resp.model})")
+            if resp.content:
+                print("\n" + resp.content)
+            if resp.error_message:
+                print(f"\nError: {resp.error_message}", file=sys.stderr)
+        return 0 if resp.status == ReasoningStatus.SUCCESS else 1
 
     elif args.command == "pipeline":
         goal = args.goal or f"Execute {args.flavor} multi-agent workflow pipeline"

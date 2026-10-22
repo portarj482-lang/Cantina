@@ -20,6 +20,18 @@ from universal_adaptive_engine.adapters import (
     HostEnvironmentAdapter,
     CantinaBountyAdapter,
 )
+from universal_adaptive_engine.providers import (
+    ReasoningRequest,
+    ReasoningResponse,
+    ReasoningStatus,
+    ReasoningPurpose,
+    ProviderCapabilities,
+    ProviderHealth,
+    OpenAIConfig,
+    ReasoningProvider,
+    OpenAIReasoningProvider,
+    get_reasoning_provider,
+)
 from universal_adaptive_engine.harness import (
     TaskLedger,
     EvidenceStore,

@@ -45,6 +45,7 @@ A match against a pattern in this file is a hypothesis, not a finding.
 3. Run `/cross-check <source-slug> <question>` if the entry's evidence is needed. Log the read in both bounties.
 4. Confirm the pattern's preconditions in the new code, with `[SRC]` tags, before writing a PoC.
 5. A new PoC is written and must pass on both planes before any finding is created.
+6. **Adversarial Negative Control Gating & Dynamic Architecture Adaptation**: All pattern verifications must execute via `architecture-adapter` bound to `TargetContext`. Every pattern hypothesis must execute an independent challenger negative control designed to falsify the claim; if the negative control cannot falsify a broken state or passes incorrectly, the hypothesis is marked `UNVERIFIED` and barred from finding admission.
 
 The preconditions in the new code can differ from the source bounty. Check each "Applies when" item again.
 
@@ -97,3 +98,4 @@ The preconditions in the new code can differ from the source bounty. Check each 
 | Date | Action | Entries after | Reason |
 |---|---|---|---|
 | 2026-10-10 | File created with admission rules, generalization rules, and template | 0 | No bounty has been run; no PoC has passed |
+| 2026-10-21 | Added USAP Adversarial Negative Control Gating and Dynamic Architecture Adaptation rules to §3 | 0 | Strengthen operational pattern verification |

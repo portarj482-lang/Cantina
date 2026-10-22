@@ -2,6 +2,7 @@
 from __future__ import annotations
 import hashlib
 import json
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -71,11 +72,39 @@ class EvidenceRecord:
 
     @staticmethod
     def hash_artifact(path: Path | str) -> str:
-        """Compute SHA-256 hash of an artifact on disk."""
+        """Compute SHA-256 hash of an artifact on disk (file or directory tree)."""
         target = Path(path)
         if not target.exists():
             raise FileNotFoundError(f"Artifact not found for hashing: {target}")
         h = hashlib.sha256()
+        if target.is_dir():
+            ignored_dirs = {".git", ".gemini", "node_modules", "cache", ".orchestrator_state", ".pytest_cache"}
+            entries: list[tuple[str, Path, bool]] = []
+            for root, dirs, files in os.walk(target, topdown=True, followlinks=False):
+                dirs[:] = sorted([
+                    d for d in dirs
+                    if d not in ignored_dirs and not os.path.islink(os.path.join(root, d))
+                ])
+                for fname in sorted(files):
+                    fpath = Path(root) / fname
+                    rel = str(fpath.relative_to(target))
+                    is_link = fpath.is_symlink()
+                    entries.append((rel, fpath, is_link))
+
+            entries.sort(key=lambda x: x[0])
+            for rel_str, fpath, is_link in entries:
+                h.update(rel_str.encode("utf-8"))
+                if is_link:
+                    link_target = os.readlink(fpath)
+                    h.update(b"->")
+                    h.update(link_target.encode("utf-8"))
+                else:
+                    h.update(b":")
+                    with open(fpath, "rb") as f:
+                        while chunk := f.read(65536):
+                            h.update(chunk)
+            return h.hexdigest()
+
         with open(target, "rb") as f:
             while chunk := f.read(65536):
                 h.update(chunk)

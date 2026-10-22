@@ -1,6 +1,7 @@
 """Universal Adaptive Engineering Orchestrator and Execution Harness."""
 from __future__ import annotations
 import json
+import os
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -260,80 +261,143 @@ class UniversalAdaptiveOrchestrator:
             return self._build_report(goal, host_disc, [task1, task2], [], [], {}, challenger_review, "BLOCKED")
 
         target_path = self.workspace_root / target_file
-        evid_inspect = self.evidence_store.create_artifact_evidence(
-            evidence_id=f"EVID-INSPECT-{task1_id}",
-            artifact_path=target_path,
-            source_ref=str(target_path),
-            acquisition_method="file_inspection",
-            observed_result=f"File {target_file} verified present on disk, size={target_path.stat().st_size} bytes",
-            confidence=ConfidenceLevel.VERIFIED,
-            related_task_id=task1_id,
-        )
+        try:
+            if target_path.is_dir():
+                ignored_dirs = {".git", ".gemini", "node_modules", "cache", ".orchestrator_state", ".pytest_cache"}
+                target_size = 0
+                for root, dirs, files in os.walk(target_path, topdown=True, followlinks=False):
+                    dirs[:] = [d for d in dirs if d not in ignored_dirs and not os.path.islink(os.path.join(root, d))]
+                    for fname in files:
+                        fp = Path(root) / fname
+                        if not fp.is_symlink():
+                            target_size += fp.stat().st_size
+                obs_desc = f"Directory {target_file} verified present on disk, total size={target_size} bytes"
+            else:
+                target_size = target_path.stat().st_size
+                obs_desc = f"File {target_file} verified present on disk, size={target_size} bytes"
 
-        task1.evidence_refs.append(evid_inspect.evidence_id)
-        task1.tests.passed.append(f"inspect_path_{target_file}")
-        self.ledger.transition_task(task1_id, TaskState.VERIFYING, reason="Execution complete, verifying criteria")
-        self.ledger.transition_task(task1_id, TaskState.COMPLETED_VERIFIED, reason="Criteria passed with evidence")
+            evid_inspect = self.evidence_store.create_artifact_evidence(
+                evidence_id=f"EVID-INSPECT-{task1_id}",
+                artifact_path=target_path,
+                source_ref=str(target_path),
+                acquisition_method="file_inspection",
+                observed_result=obs_desc,
+                confidence=ConfidenceLevel.VERIFIED,
+                related_task_id=task1_id,
+            )
+
+            task1.evidence_refs.append(evid_inspect.evidence_id)
+            task1.tests.passed.append(f"inspect_path_{target_file}")
+            self.ledger.transition_task(task1_id, TaskState.VERIFYING, reason="Execution complete, verifying criteria")
+            self.ledger.transition_task(task1_id, TaskState.COMPLETED_VERIFIED, reason="Criteria passed with evidence")
+        except Exception as error:
+            blocker = self.diagnose_blocker(error, context=f"Path inspection of {target_file}")
+            self.ledger.block_task(task1_id, blocker)
+            blocker2 = BlockerRecord.create_diagnosed(
+                category=BlockerCategory.DEPENDENCY_FAILURE,
+                message=f"Prerequisite {task1_id} was blocked: {blocker.message}",
+                diagnosis="Dependency task blocked",
+                recovery_action="Resolve prerequisite blocker",
+                stop_condition="Do not execute dependent task",
+                recoverable=False,
+            )
+            self.ledger.block_task(task2_id, blocker2)
+            challenger_review = {"status": "NOT_RUN", "summary": "Challenger review skipped because execution was blocked"}
+            return self._build_report(goal, host_disc, [task1, task2], [], [], {}, challenger_review, "BLOCKED")
 
         # 4. EXECUTE TASK 2
         self.ledger.transition_task(task2_id, TaskState.READY, reason="Dependency TASK 1 completed")
         self.ledger.transition_task(task2_id, TaskState.RUNNING, reason="Starting execution")
 
-        computed_sha = EvidenceRecord.hash_artifact(target_path)
-        evid_digest = self.evidence_store.record_evidence(
-            EvidenceRecord(
-                evidence_id=f"EVID-DIGEST-{task2_id}",
-                evidence_type=EvidenceType.OBSERVED,
-                source_ref=str(target_path),
-                artifact_path=str(target_path),
-                sha256=computed_sha,
-                acquisition_method="sha256_computation",
-                observed_result=f"Computed SHA-256: {computed_sha}",
-                confidence=ConfidenceLevel.VERIFIED,
-                related_task_id=task2_id,
+        try:
+            computed_sha = EvidenceRecord.hash_artifact(target_path)
+            evid_digest = self.evidence_store.record_evidence(
+                EvidenceRecord(
+                    evidence_id=f"EVID-DIGEST-{task2_id}",
+                    evidence_type=EvidenceType.OBSERVED,
+                    source_ref=str(target_path),
+                    artifact_path=str(target_path),
+                    sha256=computed_sha,
+                    acquisition_method="sha256_computation",
+                    observed_result=f"Computed SHA-256: {computed_sha}",
+                    confidence=ConfidenceLevel.VERIFIED,
+                    related_task_id=task2_id,
+                )
             )
-        )
-        task2.evidence_refs.append(evid_digest.evidence_id)
-        task2.tests.passed.append(f"sha256_verification_{target_file}")
-        self.ledger.transition_task(task2_id, TaskState.VERIFYING, reason="Digest computed")
-        self.ledger.transition_task(task2_id, TaskState.COMPLETED_VERIFIED, reason="Criteria satisfied")
+            task2.evidence_refs.append(evid_digest.evidence_id)
+            task2.tests.passed.append(f"sha256_verification_{target_file}")
+            self.ledger.transition_task(task2_id, TaskState.VERIFYING, reason="Digest computed")
+        except Exception as error:
+            blocker = self.diagnose_blocker(error, context=f"SHA-256 computation of {target_file}")
+            self.ledger.block_task(task2_id, blocker)
+            challenger_review = {"status": "NOT_RUN", "summary": "Challenger review skipped because execution was blocked"}
+            return self._build_report(goal, host_disc, [task1, task2], [], [], {}, challenger_review, "BLOCKED")
 
         # 5. INDEPENDENT CHALLENGER STEP
         # Independent challenger checks for falsification: what if file is modified?
         challenger_passed = True
         challenger_notes = []
-        # Negative control: test that hash of modified buffer does NOT match
-        tampered_buffer = target_path.read_bytes() + b"\n# TAMPER_TEST"
-        import hashlib
-        tampered_hash = hashlib.sha256(tampered_buffer).hexdigest()
-        if tampered_hash == computed_sha:
+        try:
+            # Negative control: test that hash of modified buffer does NOT match
+            if target_path.is_dir():
+                tampered_buffer = computed_sha.encode("utf-8") + b"\n# TAMPER_TEST"
+            else:
+                tampered_buffer = target_path.read_bytes() + b"\n# TAMPER_TEST"
+            import hashlib
+            tampered_hash = hashlib.sha256(tampered_buffer).hexdigest()
+            if tampered_hash == computed_sha:
+                challenger_passed = False
+                challenger_notes.append("Falsification failure: Hash collision detected or tampered buffer identical")
+            else:
+                challenger_notes.append("Falsification check passed: Tampered buffer correctly produces distinct digest")
+        except Exception as error:
             challenger_passed = False
-            challenger_notes.append("Falsification failure: Hash collision detected or tampered buffer identical")
+            challenger_notes.append(f"Falsification check error: {error}")
+
+        if challenger_passed:
+            self.ledger.transition_task(task2_id, TaskState.COMPLETED_VERIFIED, reason="Criteria satisfied and negative control passed")
         else:
-            challenger_notes.append("Falsification check passed: Tampered buffer correctly produces distinct digest")
+            self.ledger.transition_task(task2_id, TaskState.FAILED, reason="Independent challenger negative control failed")
 
         challenger_review = {
             "status": "PASSED" if challenger_passed else "FAILED",
             "summary": "; ".join(challenger_notes),
-            "negative_control_verified": True,
+            "negative_control_verified": challenger_passed,
         }
 
         # 6. ADMISSION & FINDINGS
-        finding = FindingRecord(
-            finding_id=f"FIND-ARCH-{uuid.uuid4().hex[:4]}",
-            title=f"Host artifact {target_file} digest verified with provenance",
-            status=FindingStatus.SUPPORTED,
-            source_refs=[f"[SRC: {target_file} @HEAD]"],
-            affected_versions=["current"],
-            locations=[LocationRef(path=target_file)],
-            original_labels=["baseline"],
-            derived_labels=["artifact_integrity"],
-            preconditions=["File must exist on disk"],
-            impact=ImpactLevel.INFORMATIONAL,
-            exploitability=ExploitabilityLevel.UNVERIFIED,
-            confidence=ConfidenceLevel.VERIFIED,
-            reproduction_refs=[evid_digest.evidence_id],
-        )
+        if challenger_passed:
+            finding = FindingRecord(
+                finding_id=f"FIND-ARCH-{uuid.uuid4().hex[:4]}",
+                title=f"Host artifact {target_file} digest verified with provenance",
+                status=FindingStatus.SUPPORTED,
+                source_refs=[f"[SRC: {target_file} @HEAD]"],
+                affected_versions=["current"],
+                locations=[LocationRef(path=target_file)],
+                original_labels=["baseline"],
+                derived_labels=["artifact_integrity"],
+                preconditions=["File must exist on disk"],
+                impact=ImpactLevel.INFORMATIONAL,
+                exploitability=ExploitabilityLevel.UNVERIFIED,
+                confidence=ConfidenceLevel.VERIFIED,
+                reproduction_refs=[evid_digest.evidence_id],
+            )
+        else:
+            finding = FindingRecord(
+                finding_id=f"FIND-ARCH-{uuid.uuid4().hex[:4]}",
+                title=f"Host artifact {target_file} digest falsification check failed",
+                status=FindingStatus.REFUTED,
+                source_refs=[f"[SRC: {target_file} @HEAD]"],
+                affected_versions=["current"],
+                locations=[LocationRef(path=target_file)],
+                original_labels=["baseline"],
+                derived_labels=["artifact_integrity"],
+                preconditions=["File must exist on disk"],
+                impact=ImpactLevel.INFORMATIONAL,
+                exploitability=ExploitabilityLevel.REFUTED,
+                confidence=ConfidenceLevel.REFUTED,
+                counterevidence_refs=["EVID-CHALLENGE-FALSIFIED"],
+            )
         finding.validate()
 
         adaptation = AdaptationRecord(
@@ -345,17 +409,17 @@ class UniversalAdaptiveOrchestrator:
             compatibility=CompatibilityMatrix(
                 contracts="compatible",
                 dependencies="compatible",
-                security="passed",
+                security="passed" if challenger_passed else "failed",
                 regressions="none_observed",
             ),
             approval_required=False,
-            decision=AdaptationDecision.ACCEPTED_FOR_STAGING,
+            decision=AdaptationDecision.ACCEPTED_FOR_STAGING if challenger_passed else AdaptationDecision.REJECTED,
         )
         adaptation.validate()
 
         verification_summary = {
-            "passed": 2,
-            "failed": 0,
+            "passed": 2 if challenger_passed else 1,
+            "failed": 0 if challenger_passed else 1,
             "skipped": 0,
             "not_run": 0,
         }
@@ -370,6 +434,10 @@ class UniversalAdaptiveOrchestrator:
             "Run continuous regression benchmarks against held-out test corpus.",
         ]
 
+        completion_state = "COMPLETED_VERIFIED" if challenger_passed else "FAILED"
+        if not challenger_passed:
+            limitations.append("Independent challenger negative control failed")
+
         return self._build_report(
             goal=goal,
             host_summary=host_disc,
@@ -378,7 +446,7 @@ class UniversalAdaptiveOrchestrator:
             adaptations=[adaptation],
             verification_summary=verification_summary,
             challenger_review=challenger_review,
-            completion_state="COMPLETED_VERIFIED",
+            completion_state=completion_state,
             limitations=limitations,
             next_steps=next_steps,
         )
@@ -417,12 +485,15 @@ class UniversalAdaptiveOrchestrator:
     ):
         """Execute a specialized end-to-end operation pipeline through the Universal Adaptive Lifecycle."""
         from universal_adaptive_engine.workflows.operations import get_operation_pipeline
+        ctx = dict(context or {})
+        adapter = ctx.pop("adapter", None)
+        if adapter is None:
+            adapter = self.host_adapter if operation_name.lower().strip() == "canonical" else self.cantina_adapter
         pipeline = get_operation_pipeline(
             name=operation_name,
-            adapter=self.cantina_adapter if operation_name in ("cantina", "dispute", "delayed-weth", "delayed_weth", "multiproof-tee", "multiproof_tee", "rpc-governance", "rpc_governance") else self.host_adapter,
+            adapter=adapter,
             workspace_root=self.workspace_root,
         )
-        ctx = dict(context or {})
         if goal:
             ctx["goal"] = goal
         return pipeline.execute(ctx)

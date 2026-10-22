@@ -56,6 +56,7 @@ def main() -> int:
     slice_parser = subparsers.add_parser("vertical-slice", help="Run an end-to-end vertical slice")
     slice_parser.add_argument("--goal", default="Verify host architecture integrity and canonical schemas")
     slice_parser.add_argument("--target", default="INSTRUCTIONS.md")
+    slice_parser.add_argument("--slice", default=None, help="Vertical slice name or identifier")
 
     # health-check
     subparsers.add_parser("health-check", help="Run adapter health checks")
@@ -140,7 +141,10 @@ def main() -> int:
             return 0
 
     elif args.command == "vertical-slice":
-        report = orchestrator.run_vertical_slice(goal=args.goal, target_file=args.target)
+        goal = args.goal
+        if getattr(args, "slice", None) and args.goal == "Verify host architecture integrity and canonical schemas":
+            goal = f"Verify vertical slice {args.slice}"
+        report = orchestrator.run_vertical_slice(goal=goal, target_file=args.target)
         print(report.to_markdown())
         return 0 if report.completion_state == "COMPLETED_VERIFIED" else 1
 

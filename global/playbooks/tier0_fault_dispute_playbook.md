@@ -1,9 +1,9 @@
 # Tier 0 Fault Dispute & Multiproof Invariant Playbook
 
-**Playbook Version:** `1.0.0`  
+**Playbook Version:** `2.0.0`  
 **Slug:** `tier0-fault-dispute-playbook`  
-**Domain:** Base Tier 0 Settlement Layer (`bounties/base/contracts` & `bounties/base/base/crates`)  
-**Target Contracts:** `OptimismPortal2.sol`, `DelayedWETH.sol`, `DisputeGameFactory.sol`, `AnchorStateRegistry.sol`, `TEEProverRegistry.sol`  
+**Domain:** Tier 0 Settlement Layer (dynamic resolution via `TargetContext`, e.g. EVM/Foundry contracts & Rust crates)  
+**Target Contracts:** Dynamically discovered via `architecture-adapter` (`OptimismPortal2.sol`, `DelayedWETH.sol`, `DisputeGameFactory.sol`, `AnchorStateRegistry.sol`, `TEEProverRegistry.sol`)  
 **Max Payout:** $5,000,000 (Tier 0 Critical)
 
 ---
@@ -93,40 +93,59 @@ $$\forall s \in \text{Signers}, \text{isValidSigner}(s) \implies \left( \exists 
 
 ## 3. Operational Workflows & Commands
 
-### Workflow 1: Fault Dispute Finalization Invariant Testing
+All operations are executed through the **Universal Adaptive Engineering Framework (USAP)** and mapped to the **8-Stage Glassbox Mirror Plane Orchestration** lifecycle. Direct path navigation (`cd`) and unisolated tool invocations are prohibited.
+
+### 8-Stage Glassbox Mirror Plane Lifecycle Mapping
+
+1. **Stage 1: Perception Filtering**
+   - Resolve `TargetContext` dynamically via `TargetContextResolver` (respecting explicit context, environment, and `MEMORY.md`).
+   - Validate target root containment, architecture identification (`evm`, `solana`, etc.), and scope manifest SHA-256 digest integrity (`scope.md`).
+2. **Stage 2: Parsing & Tokenization**
+   - Parse project manifests (`foundry.toml`, `Cargo.toml`), contract ASTs, and ABI signatures via `architecture-adapter`.
+3. **Stage 3: Preceptive Feature Interpretation**
+   - Bind target contracts to canonical invariant specifications:
+     - Dispute & withdrawal finalization monotonicity (`INV-DISPUTE-01`).
+     - Delayed withdrawal vault & sub-account solvency (`INV-DELAYED-WETH-02`).
+     - TEE attestation & prover signer authenticity (`INV-MULTIPROOF-03`).
+4. **Stage 4: Thinking & Planning**
+   - Build task ledger dependency graphs with strict execution bounds, rollback recipes, and acceptance criteria.
+5. **Stage 5: Reasoning & Verification**
+   - Execute non-destructive verification passes in local isolated sandboxes.
+   - If `TargetContext` indicates the target does not implement the supervised contracts or runtime, emit `NOT_APPLICABLE` and short-circuit cleanly without false claims.
+6. **Stage 6: Context & Scope Modeling**
+   - Enforce subdirectory path containment, boundary checks, and scope lock verification.
+7. **Stage 7: Awareness & Semantic Interpretation (Adversarial Negative Controls)**
+   - Run independent challenger falsification suites. Falsification tests MUST fail against canonical invariants (proving invariant robustness) or expose true violations.
+   - If negative control falsification fails or divergence is detected, the run state transitions strictly to `FAILED`.
+8. **Stage 8: Meta-Governance & Executive Authorization**
+   - Independent verification gate check by `verification-agent` (#9).
+   - Require human approval before any stage promotion.
+   - Emit an honest, transparent completion report: accurately declare `COMPLETED_WITH_LIMITATIONS` whenever contract tests are checklists, fixtures, or unexecuted.
+
+### Canonical USAP CLI Invocations
+
+All domain operations adapt dynamically to the active target environment:
+
 ```bash
-export PATH="$HOME/.foundry/bin:$HOME/.cargo/bin:$PATH"
-cd ~/projects/cantina/bounties/base/contracts
+# 1. Fault Dispute Finalization Invariant Verification (INV-DISPUTE-01)
+python3 -m universal_adaptive_engine.cli operation --name dispute
 
-# Run OptimismPortal2 test suite
-forge test --match-path "test/L1/OptimismPortal2.t.sol" -vvv
+# 2. DelayedWETH Solvency Invariant Verification (INV-DELAYED-WETH-02)
+python3 -m universal_adaptive_engine.cli operation --name delayed-weth
 
-# Run AnchorStateRegistry test suite
-forge test --match-path "test/L1/proofs/AnchorStateRegistry.t.sol" -vvv
-```
+# 3. TEE Prover Registry Attestation Invariant Verification (INV-MULTIPROOF-03)
+python3 -m universal_adaptive_engine.cli operation --name multiproof-tee
 
-### Workflow 2: DelayedWETH Solvency Invariant Testing
-```bash
-export PATH="$HOME/.foundry/bin:$HOME/.cargo/bin:$PATH"
-cd ~/projects/cantina/bounties/base/contracts
-
-# Run DelayedWETH test suite
-forge test --match-path "test/L1/proofs/DelayedWETH.t.sol" -vvv
-```
-
-### Workflow 3: TEE Prover Registry Attestation Invariant Testing
-```bash
-export PATH="$HOME/.foundry/bin:$HOME/.cargo/bin:$PATH"
-cd ~/projects/cantina/bounties/base/contracts
-
-# Run TEEProverRegistry test suite
-forge test --match-path "test/L1/proofs/TEEProverRegistry.t.sol" -vvv
+# 4. Vertical Slice Execution with Independent Challenger Gate
+python3 -m universal_adaptive_engine.cli vertical-slice --target bounties/base/contracts/src/L1/OptimismPortal2.sol --slice dispute-finalization
 ```
 
 ---
 
 ## 4. Verification & Audit Protocol
 
-1. **Independent Verification**: No finding or hypothesis state transition (`ACTIVE` → `PROVEN` or `HOLD`) is approved without independent replication by `verification-agent` (#9).
-2. **Provenance Requirement**: Every claim must cite specific contract lines (`[SRC: path#Lxx]`), execution tools (`[TOOL: forge/cargo]`), and reproducible proof files (`[POC: path]`).
-3. **Safety Compliance**: All tests run strictly within the local EVM container or sandbox with zero live-fund interactions.
+1. **Independent Verification & Gate Enforcement**: No finding or hypothesis state transition (`ACTIVE` → `PROVEN` or `HOLD`) is approved without independent replication by `verification-agent` (#9).
+2. **Negative Control Requirement**: Invariant verification is incomplete without adversarial negative controls. If challenger falsification fails to execute or asserts invalid state, the run outcome is marked `FAILED`.
+3. **Honest Result Taxonomy**: Operations must report outcomes strictly under the 5-state taxonomy (`PASS`, `FAIL`, `BLOCKED`, `NOT_APPLICABLE`, `NOT_VERIFIED`). Never emit a checklist stub as evidence of deployed contract compliance.
+4. **Provenance & Attestation**: Every claim must cite specific source references (`[SRC: path#Lxx]`), execution tools (`[TOOL: forge/cargo]`), and reproducible proof files (`[POC: path]`) verified against computed SHA-256 digests.
+5. **Safety Compliance**: All tests run strictly within the local container or sandbox with zero live-fund or external network interactions.

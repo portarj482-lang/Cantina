@@ -197,17 +197,29 @@ class AgentWorkflow(ABC):
         stage_name = stage_val.value if isinstance(stage_val, WorkflowStage) else (str(stage_val) if stage_val else None)
 
         err_str = str(error)
-        is_blocked = (
-            isinstance(error, (PermissionError, FileNotFoundError))
-            or "blocked" in err_str.lower()
-            or "permission" in err_str.lower()
-            or "not found" in err_str.lower()
-            or "missing" in err_str.lower()
-            or "policy" in err_str.lower()
-            or "boundary" in err_str.lower()
-            or "outside workspace" in err_str.lower()
+        err_lower = err_str.lower()
+        is_failure = (
+            isinstance(error, AssertionError)
+            or "negative control failed" in err_lower
+            or "falsification" in err_lower
+            or "invariant violation" in err_lower
+            or "invariant violated" in err_lower
+            or "security check failed" in err_lower
         )
-        status = "BLOCKED" if is_blocked else "FAILED"
+        if is_failure:
+            status = "FAILED"
+        else:
+            is_blocked = (
+                isinstance(error, (PermissionError, FileNotFoundError))
+                or "blocked" in err_lower
+                or "permission" in err_lower
+                or "not found" in err_lower
+                or "missing" in err_lower
+                or "policy" in err_lower
+                or "boundary" in err_lower
+                or "outside workspace" in err_lower
+            )
+            status = "BLOCKED" if is_blocked else "FAILED"
 
 
         handoff = HandoffRecord(
@@ -278,17 +290,42 @@ class AgentPipeline:
         if hasattr(self, "target_root") and getattr(self, "target_root") and "target_root" not in context:
             context["target_root"] = str(getattr(self, "target_root"))
 
-        if "target_context" not in context:
-            try:
-                from universal_adaptive_engine.models.target_context import TargetContextResolver
+        try:
+            from universal_adaptive_engine.models.target_context import TargetContext, TargetContextResolver
+            tc = context.get("target_context")
+            if tc is None:
                 tc = TargetContextResolver.resolve(context, context.get("workspace_root"))
                 context["target_context"] = tc
-                if tc.bounty_slug and "bounty_slug" not in context:
-                    context["bounty_slug"] = tc.bounty_slug
-                if tc.target_root and "target_root" not in context:
-                    context["target_root"] = str(tc.target_root)
-            except Exception:
-                pass
+            elif isinstance(tc, dict):
+                tc = TargetContextResolver.resolve(tc, context.get("workspace_root"))
+                context["target_context"] = tc
+            if not isinstance(tc, TargetContext):
+                raise TypeError("target_context must be a TargetContext instance")
+            if not tc.is_valid:
+                raise FileNotFoundError(f"Resolved target root is not an existing directory or file: {tc.target_root}")
+            if tc.bounty_slug and "bounty_slug" not in context:
+                context["bounty_slug"] = tc.bounty_slug
+            if tc.target_root and "target_root" not in context:
+                context["target_root"] = str(tc.target_root)
+        except Exception as error:
+            reason = f"Target context could not be validated: {type(error).__name__}: {error}"
+            handoff = HandoffRecord(
+                task_id=task_id,
+                agent_role="Target Context Resolver",
+                stage=WorkflowStage.DISCOVERY.value,
+                status="BLOCKED",
+                summary=reason,
+                limitations=[reason],
+                next_action="Provide a valid, existing target context and retry",
+            )
+            return PipelineExecutionReport(
+                pipeline_name=self.name,
+                goal=goal,
+                overall_status="BLOCKED",
+                stage_handoffs={WorkflowStage.DISCOVERY.value: handoff.to_dict()},
+                limitations=[reason],
+                blockers=[reason],
+            )
 
         stage_handoffs: dict[str, dict[str, Any]] = {}
         all_evidence: list[str] = []
@@ -312,6 +349,7 @@ class AgentPipeline:
                 )
                 stage_handoffs[stage_name] = handoff.to_dict()
                 all_limitations.extend(handoff.limitations)
+                context["limitations"] = list(dict.fromkeys(all_limitations))
                 context["last_handoff"] = handoff.to_dict()
                 context.setdefault("stage_handoffs", {})[stage_name] = handoff.to_dict()
                 continue
@@ -325,20 +363,48 @@ class AgentPipeline:
 
             all_evidence.extend(handoff.evidence_refs)
             all_limitations.extend(handoff.limitations)
+            context["limitations"] = list(dict.fromkeys(all_limitations))
+            context["evidence"] = list(dict.fromkeys(all_evidence))
 
             if handoff.status == "BLOCKED":
                 all_blockers.append(f"{stage_name} blocked by {p_stage.workflow.role}: {handoff.summary}")
                 if p_stage.required:
                     pipeline_status = "BLOCKED"
                     # Mark remaining stages as NOT_RUN
-                    self._mark_remaining_not_run(p_stage.stage, stage_handoffs, task_id, "Prior required stage blocked")
+                    self._mark_remaining_not_run(
+                        p_stage.stage,
+                        stage_handoffs,
+                        task_id,
+                        "Prior required stage blocked",
+                        all_limitations=all_limitations,
+                        context=context,
+                    )
                     break
+                else:
+                    if pipeline_status == "COMPLETED_VERIFIED":
+                        pipeline_status = "COMPLETED_WITH_LIMITATIONS"
+                    lim = f"Optional stage {stage_name} blocked: {handoff.summary}"
+                    all_limitations.append(lim)
+                    context["limitations"] = list(dict.fromkeys(all_limitations))
             elif handoff.status == "FAILED":
                 all_blockers.append(f"{stage_name} failed under {p_stage.workflow.role}: {handoff.summary}")
                 if p_stage.required:
                     pipeline_status = "FAILED"
-                    self._mark_remaining_not_run(p_stage.stage, stage_handoffs, task_id, "Prior required stage failed")
+                    self._mark_remaining_not_run(
+                        p_stage.stage,
+                        stage_handoffs,
+                        task_id,
+                        "Prior required stage failed",
+                        all_limitations=all_limitations,
+                        context=context,
+                    )
                     break
+                else:
+                    if pipeline_status == "COMPLETED_VERIFIED":
+                        pipeline_status = "COMPLETED_WITH_LIMITATIONS"
+                    lim = f"Optional stage {stage_name} failed under {p_stage.workflow.role}: {handoff.summary}"
+                    all_limitations.append(lim)
+                    context["limitations"] = list(dict.fromkeys(all_limitations))
             elif handoff.status == "COMPLETED_WITH_LIMITATIONS":
                 if pipeline_status == "COMPLETED_VERIFIED":
                     pipeline_status = "COMPLETED_WITH_LIMITATIONS"
@@ -348,8 +414,8 @@ class AgentPipeline:
             goal=goal,
             overall_status=pipeline_status,
             stage_handoffs=stage_handoffs,
-            evidence_collected=list(set(all_evidence)),
-            limitations=list(set(all_limitations)),
+            evidence_collected=list(dict.fromkeys(all_evidence)),
+            limitations=list(dict.fromkeys(all_limitations)),
             blockers=all_blockers,
         )
 
@@ -359,6 +425,8 @@ class AgentPipeline:
         stage_handoffs: dict[str, dict[str, Any]],
         task_id: str,
         reason: str,
+        all_limitations: Optional[list[str]] = None,
+        context: Optional[dict[str, Any]] = None,
     ) -> None:
         passed_current = False
         for s in self.stages:
@@ -366,12 +434,19 @@ class AgentPipeline:
                 passed_current = True
                 continue
             if passed_current:
+                lim = f"Stage {s.stage.value} was not run: {reason}"
                 stage_handoffs[s.stage.value] = HandoffRecord(
                     task_id=task_id,
                     agent_role=s.workflow.role,
                     stage=s.stage.value,
                     status="NOT_RUN",
                     summary=f"Not run: {reason}",
-                    limitations=[f"Stage {s.stage.value} was not run: {reason}"],
+                    limitations=[lim],
                     next_action="Resolve prerequisite failure",
                 ).to_dict()
+                if all_limitations is not None:
+                    all_limitations.append(lim)
+        if context is not None:
+            context.setdefault("stage_handoffs", {}).update(stage_handoffs)
+            if all_limitations is not None:
+                context["limitations"] = list(dict.fromkeys(all_limitations))

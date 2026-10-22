@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Optional
 
+from universal_adaptive_engine.adapters.protocol import ArchitectureAdapter
 from universal_adaptive_engine.adapters.cantina_adapter import (
     CantinaBountyAdapter,
 )
@@ -29,6 +30,7 @@ class CantinaBountyPipeline(CanonicalAdaptivePipeline):
         self,
         workspace_root: Path | str = ".",
         *,
+        adapter: Optional[ArchitectureAdapter] = None,
         execution_policy: ExecutionPolicy | None = None,
         trusted_scope_sha256: Optional[str] = None,
     ) -> None:
@@ -43,8 +45,9 @@ class CantinaBountyPipeline(CanonicalAdaptivePipeline):
         self.execution_policy = execution_policy or ExecutionPolicy()
         self.execution_policy.validate()
 
-        # Use the same resolved root for the adapter and pipeline.
-        adapter = CantinaBountyAdapter(root, trusted_scope_sha256=trusted_scope_sha256)
+        # Use the provided adapter or create one with the resolved root.
+        if adapter is None:
+            adapter = CantinaBountyAdapter(root, trusted_scope_sha256=trusted_scope_sha256)
 
         super().__init__(
             name="Cantina-Bounty-Adaptive-Pipeline",

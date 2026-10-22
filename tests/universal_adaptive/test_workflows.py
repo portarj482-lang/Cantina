@@ -136,6 +136,18 @@ class TestSpecialistAgentWorkflows(unittest.TestCase):
         })
         self.assertEqual(h4.status, "COMPLETED_VERIFIED")
 
+        # COMPLETION_REPORT with non-verified stage
+        h5 = wf.execute({
+            "goal": "Test goal",
+            "stage": WorkflowStage.COMPLETION_REPORT,
+            "stage_handoffs": {
+                "INTAKE": h1.to_dict(),
+                "DISCOVERY": {"status": "COMPLETED_WITH_LIMITATIONS", "summary": "Limited discovery"},
+            },
+        })
+        self.assertEqual(h5.status, "COMPLETED_WITH_LIMITATIONS")
+        self.assertTrue(len(h5.limitations) > 0)
+
     def test_architecture_analyst_workflow(self):
         wf = ArchitectureAnalystWorkflow(self.host_adapter)
         h = wf.execute({"goal": "Discover architecture", "stage": WorkflowStage.DISCOVERY})
@@ -282,6 +294,21 @@ class TestPipelineAndInheritance(unittest.TestCase):
         for stage_name, handoff in report.stage_handoffs.items():
             self.assertEqual(handoff["status"], "COMPLETED_VERIFIED")
 
+    def test_canonical_pipeline_blocks_invalid_target_context_before_running_stages(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            missing_root = Path(tmp_dir) / "missing-target"
+            pipeline = CanonicalAdaptivePipeline(
+                adapter=self.host_adapter,
+                workspace_root=missing_root,
+            )
+            report = pipeline.execute({"goal": "Block when target context cannot be resolved"})
+
+        self.assertEqual(report.overall_status, "BLOCKED")
+        self.assertEqual(list(report.stage_handoffs), ["DISCOVERY"])
+        self.assertEqual(report.stage_handoffs["DISCOVERY"]["status"], "BLOCKED")
+        self.assertEqual(report.evidence_collected, [])
+        self.assertIn("not an existing directory", report.blockers[0])
+
     def test_pipeline_blocker_short_circuits_remaining_stages(self):
         pipeline = CanonicalAdaptivePipeline(
             adapter=self.host_adapter,
@@ -310,6 +337,83 @@ class TestPipelineAndInheritance(unittest.TestCase):
         self.assertIn("not applicable", report.stage_handoffs["DEPLOYMENT"]["summary"])
         # Overall status should be verified or completed with limitations (due to scope digest)
         self.assertIn(report.overall_status, ("COMPLETED_VERIFIED", "COMPLETED_WITH_LIMITATIONS"))
+
+    def test_optional_stage_failure_downgrades_to_completed_with_limitations(self):
+        pipeline = CanonicalAdaptivePipeline(
+            adapter=self.host_adapter,
+            workspace_root=self.workspace_root,
+        )
+        # Make IMPLEMENTATION optional and fail
+        for s in pipeline.stages:
+            if s.stage == WorkflowStage.IMPLEMENTATION:
+                s.required = False
+
+        class FailingWorkflow(AgentWorkflow):
+            def run_step(self, context: dict[str, Any]) -> dict[str, Any]:
+                return {
+                    "status": "FAILED",
+                    "summary": "Optional implementation step failed cleanly",
+                    "claims": [],
+                    "evidence_refs": [],
+                    "limitations": ["Optional implementation failed"],
+                    "next_action": "Continue with remaining stages",
+                }
+
+        pipeline.override_stage(WorkflowStage.IMPLEMENTATION, FailingWorkflow("agent-fail", "Failing Engineer", "dev"))
+        report = pipeline.execute({"goal": "Test optional stage failure handling"})
+
+        self.assertEqual(report.overall_status, "COMPLETED_WITH_LIMITATIONS")
+        self.assertEqual(report.stage_handoffs["IMPLEMENTATION"]["status"], "FAILED")
+        # Remaining stages still ran!
+        self.assertEqual(report.stage_handoffs["VERIFICATION"]["status"], "COMPLETED_VERIFIED")
+        self.assertEqual(report.stage_handoffs["COMPLETION_REPORT"]["status"], "COMPLETED_WITH_LIMITATIONS")
+        self.assertTrue(any("Optional stage IMPLEMENTATION failed" in lim for lim in report.limitations))
+
+    def test_interleaved_skipped_and_failed_optional_stages(self):
+        pipeline = CanonicalAdaptivePipeline(
+            adapter=self.host_adapter,
+            workspace_root=self.workspace_root,
+        )
+        # Skip STAGING
+        pipeline.skip_stage(WorkflowStage.STAGING, "Staging not applicable in test mode")
+
+        # Make APPROVAL optional and blocked
+        for s in pipeline.stages:
+            if s.stage == WorkflowStage.APPROVAL:
+                s.required = False
+
+        class BlockedWorkflow(AgentWorkflow):
+            def run_step(self, context: dict[str, Any]) -> dict[str, Any]:
+                raise PermissionError("Approval requires multi-sig admin keys")
+
+        pipeline.override_stage(WorkflowStage.APPROVAL, BlockedWorkflow("agent-block", "Approval Agent", "admin"))
+
+        # Make DEPLOYMENT optional and failed
+        for s in pipeline.stages:
+            if s.stage == WorkflowStage.DEPLOYMENT:
+                s.required = False
+
+        class FailingDeployWorkflow(AgentWorkflow):
+            def run_step(self, context: dict[str, Any]) -> dict[str, Any]:
+                return {
+                    "status": "FAILED",
+                    "summary": "Deploy dry-run failed",
+                    "claims": [],
+                    "evidence_refs": [],
+                    "limitations": ["Deploy dry-run failed"],
+                    "next_action": "Check configuration",
+                }
+
+        pipeline.override_stage(WorkflowStage.DEPLOYMENT, FailingDeployWorkflow("agent-deploy", "Deploy Agent", "ops"))
+
+        report = pipeline.execute({"goal": "Test interleaved skipped and failed optional stages"})
+
+        self.assertEqual(report.overall_status, "COMPLETED_WITH_LIMITATIONS")
+        self.assertEqual(report.stage_handoffs["STAGING"]["status"], "NOT_RUN")
+        self.assertEqual(report.stage_handoffs["APPROVAL"]["status"], "BLOCKED")
+        self.assertEqual(report.stage_handoffs["DEPLOYMENT"]["status"], "FAILED")
+        self.assertEqual(report.stage_handoffs["POST_DEPLOYMENT_VALIDATION"]["status"], "COMPLETED_VERIFIED")
+        self.assertEqual(report.stage_handoffs["COMPLETION_REPORT"]["status"], "COMPLETED_WITH_LIMITATIONS")
 
 
 if __name__ == "__main__":

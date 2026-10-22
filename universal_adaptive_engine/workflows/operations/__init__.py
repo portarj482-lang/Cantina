@@ -100,7 +100,7 @@ def get_operation_pipeline(
     if pipeline_cls is CanonicalAdaptivePipeline:
         return CanonicalAdaptivePipeline(adapter=adapter, workspace_root=workspace_root)
     elif pipeline_cls is CantinaBountyPipeline:
-        return CantinaBountyPipeline(workspace_root=workspace_root)
+        return CantinaBountyPipeline(adapter=adapter, workspace_root=workspace_root)
     else:
         return pipeline_cls(adapter=adapter, workspace_root=workspace_root)
 

@@ -61,8 +61,8 @@ class TargetContext:
 
     @property
     def is_valid(self) -> bool:
-        """A target context is valid if target_root exists and is within workspace or declared."""
-        return self.target_root.exists() and self.target_root.is_dir()
+        """A target context is valid if target_root exists on disk."""
+        return self.target_root.exists()
 
     def has_capability(self, capability: str) -> bool:
         """Check if target runtime or workspace supports a specific capability."""
@@ -114,12 +114,34 @@ class TargetContextResolver:
         explicit_bounty = ctx.get("bounty_slug") or os.environ.get("CANTINA_BOUNTY")
 
         target_root: Optional[Path] = None
+        target_file: Optional[Path] = None
         bounty_slug: Optional[str] = explicit_bounty
 
         if explicit_target:
-            target_root = Path(explicit_target).resolve()
-            if not bounty_slug and "bounties/" in str(target_root):
-                bounty_slug = target_root.name
+            target_path = Path(explicit_target).resolve()
+            if target_path.is_file():
+                target_file = target_path
+                target_root = target_path.parent
+            else:
+                target_root = target_path
+
+            if not bounty_slug:
+                try:
+                    bounties_dir = ws / "bounties"
+                    if bounties_dir.exists() and target_root.is_relative_to(bounties_dir):
+                        rel = target_root.relative_to(bounties_dir)
+                        if rel.parts:
+                            bounty_slug = rel.parts[0]
+                    elif "bounties" in target_root.parts:
+                        idx = target_root.parts.index("bounties")
+                        if idx + 1 < len(target_root.parts):
+                            bounty_slug = target_root.parts[idx + 1]
+                        else:
+                            bounty_slug = None
+                    else:
+                        bounty_slug = None
+                except Exception:
+                    bounty_slug = None
         elif explicit_bounty:
             target_root = (ws / "bounties" / explicit_bounty).resolve()
         else:
@@ -163,6 +185,16 @@ class TargetContextResolver:
                         cand_dirs.append(sub)
             except OSError:
                 pass
+
+            # Walk up ancestor directories towards workspace_root to detect root manifests
+            curr = target_root
+            while curr != ws and curr.parent != curr:
+                if curr.is_relative_to(ws) and curr != ws:
+                    curr = curr.parent
+                    if curr not in cand_dirs:
+                        cand_dirs.append(curr)
+                else:
+                    break
 
             for cand in cand_dirs:
                 foundry_toml = cand / "foundry.toml"
@@ -228,6 +260,23 @@ class TargetContextResolver:
                     if not architecture:
                         architecture = "move"
 
+        if target_file:
+            if target_file.suffix == ".sol":
+                if "solidity" not in languages:
+                    languages.append("solidity")
+                if not architecture or architecture == "generic":
+                    architecture = "evm"
+            elif target_file.suffix == ".rs":
+                if "rust" not in languages:
+                    languages.append("rust")
+                if not architecture or architecture == "generic":
+                    architecture = "rust"
+            elif target_file.suffix == ".move":
+                if "move" not in languages:
+                    languages.append("move")
+                if not architecture or architecture == "generic":
+                    architecture = "move"
+
         if not architecture:
             architecture = "generic"
 
@@ -253,8 +302,22 @@ class TargetContextResolver:
             scope_cand = target_root / "scope.md"
             if scope_cand.exists() and scope_cand.is_file():
                 scope_manifest = scope_cand
+            elif bounty_slug and (ws / "bounties" / bounty_slug / "scope.md").exists():
+                scope_manifest = ws / "bounties" / bounty_slug / "scope.md"
+            elif (target_root.parent / "scope.md").exists():
+                scope_manifest = target_root.parent / "scope.md"
+            elif target_root.exists() and target_root.is_dir():
+                for cand in cand_dirs:
+                    sc = cand / "scope.md"
+                    if sc.exists() and sc.is_file():
+                        scope_manifest = sc
+                        break
 
         target_id = bounty_slug or (target_root.name if target_root else "unknown-target")
+
+        meta = dict(ctx.get("metadata", {}))
+        if target_file:
+            meta["target_file"] = str(target_file)
 
         return TargetContext(
             workspace_root=ws,
@@ -270,5 +333,5 @@ class TargetContextResolver:
             scope_manifest=scope_manifest,
             session_id=session_id,
             capabilities=frozenset(capabilities),
-            metadata=dict(ctx.get("metadata", {})),
+            metadata=meta,
         )

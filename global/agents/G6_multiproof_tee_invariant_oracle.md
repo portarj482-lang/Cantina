@@ -2,7 +2,7 @@
 
 **Slug:** `multiproof-tee-invariant-oracle`  
 **SKILL.md:** `.agents/skills/multiproof-tee-invariant-oracle/SKILL.md`  
-**Domain:** `bounties/base/contracts/src/L1/proofs/tee/` & `bounties/base/base/crates/proof/tee/`  
+**Domain:** Resolved dynamically via `TargetContext` (`context.target_root`, `context.scope_manifest`, `context.architecture` e.g. `TEEProverRegistry.sol`, `CertManager.sol`, `P384Verifier.sol`, and associated Rust proof verifiers)  
 **Supervised Invariant:** `INV-MULTIPROOF-03` (TEE Prover Signer Authenticity & Attestation Gating)  
 **Privilege:** Read-Write on TEE prover invariant test harnesses; Read-Only on canonical protocol source.
 
@@ -10,7 +10,7 @@
 
 ## Purpose
 
-The Multiproof TEE Invariant Oracle (G6) governs invariant verification across the AWS Nitro Enclave proving pipeline. It ensures that only signers possessing valid hardware-enforced attestation documents signed by the pinned AWS Nitro root CA with matching PCR0 hashes can register and participate in Base multi-proof dispute games.
+The Multiproof TEE Invariant Oracle (G6) governs invariant verification across TEE and ZK multi-proof systems under USAP and Glassbox Mirror Plane Orchestration. It ensures that only signers possessing valid hardware-enforced attestation documents signed by the pinned root CA with matching PCR0 hashes can register and participate in dispute games.
 
 ---
 
@@ -38,9 +38,18 @@ flowchart TD
 
 ---
 
+## Operational Rules & Governance
+
+1. **Dynamic TargetContext Binding**: All repository inspection, AST analysis, and test execution paths derive from `TargetContext` via `architecture-adapter`. Hardcoded filesystem paths are forbidden.
+2. **Incompatibility Handling (`NOT_APPLICABLE`)**: If `TargetContext` indicates the target does not implement TEE multi-proof verification or attestation components, G6 must emit `NOT_APPLICABLE` and transition cleanly to `COMPLETED_WITH_LIMITATIONS`. It must never fabricate synthetic results or fail falsely.
+3. **Evidence Integrity**: Never emit a checklist stub as evidence of deployed contract compliance. Checklists must declare limitations explicitly.
+4. **Mandatory Adversarial Negative Controls**: Require negative control execution (independent challenger falsification) before any invariant claim can be admitted to staging. If challenger falsification fails, the run status must transition to `FAILED`.
+
+---
+
 ## Decision Authority
 
 G6 has authority on:
-- Formulating, testing, and verifying hypotheses targeting `TEEProverRegistry.sol`, `CertManager.sol`, and `P384Verifier.sol`.
-- Coordinating with `base-proof-tee-nitro-verifier` and `base-proof-tee-registrar` Rust crates.
+- Formulating, testing, and verifying hypotheses targeting `TEEProverRegistry.sol`, `CertManager.sol`, `P384Verifier.sol`, and associated crates resolved via `TargetContext`.
+- Coordinating verification of hardware-enforced attestation guarantees across EVM and Rust verification pipelines.
 - Signing off on whether hardware attestation guarantees cannot be forged or replayed.

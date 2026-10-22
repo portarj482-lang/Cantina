@@ -166,11 +166,12 @@ class CantinaBountyAdapter(BaseArchitectureAdapter):
         action = task.get("action", "verify_scope")
         inputs = task.get("inputs", [])
         first_input = inputs[0] if inputs else None
-        bounty_slug = None
-        if isinstance(first_input, str):
-            bounty_slug = first_input
-        elif isinstance(first_input, dict):
-            bounty_slug = first_input.get("bounty")
+        bounty_slug = task.get("bounty_slug") or task.get("bounty")
+        if not bounty_slug:
+            if isinstance(first_input, str):
+                bounty_slug = first_input
+            elif isinstance(first_input, dict):
+                bounty_slug = first_input.get("bounty") or first_input.get("bounty_slug")
 
         if not bounty_slug:
             # Fall back to discovery active bounty

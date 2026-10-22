@@ -79,7 +79,7 @@ class DelayedWETHAnalystWorkflow(ArchitectureAnalystWorkflow):
                 found_contracts.append(matched)
 
         if not found_contracts:
-            if tc.target_id in ("base", "unknown-target") or not target_root.exists() or len(list(target_root.iterdir())) == 0:
+            if tc.target_id in ("base", "unknown-target") or not target_root.exists() or not target_root.is_dir() or len(list(target_root.iterdir())) == 0:
                 raise FileNotFoundError(
                     f"DelayedWETH Invariant Analyst could not locate required DelayedWETH contracts in {target_root}"
                 )
@@ -192,6 +192,19 @@ class WETHSolvencyVerifierWorkflow(VerificationEngineerWorkflow):
 
     def run_step(self, context: dict[str, Any]) -> dict[str, Any]:
         task_id = context.get("task_id", "TASK-WETH-003")
+
+        prior_handoff = context.get("last_handoff", {})
+        disc_handoff = context.get("stage_handoffs", {}).get("DISCOVERY", {})
+        if "NOT_APPLICABLE" in prior_handoff.get("summary", "") or "NOT_APPLICABLE" in disc_handoff.get("summary", ""):
+            return {
+                "status": "COMPLETED_WITH_LIMITATIONS",
+                "summary": "DelayedWETH Solvency Verifier: Invariant check NOT_APPLICABLE to current target",
+                "claims": ["DelayedWETH solvency verification skipped: target does not implement DelayedWETH"],
+                "evidence_refs": [f"EVID-WETH-VERIFY-{task_id}"],
+                "tests": TaskTests(passed=[], failed=[]),
+                "limitations": ["INV-DELAYED-WETH-02 verification skipped: target does not implement required DelayedWETH contracts"],
+                "next_action": "Pass non-applicable state to challenger review",
+            }
 
         # Invariant checks for INV-DELAYED-WETH-02
         claims = [

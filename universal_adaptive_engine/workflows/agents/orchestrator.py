@@ -67,15 +67,30 @@ class OrchestratorWorkflow(AgentWorkflow):
         elif stage == WorkflowStage.COMPLETION_REPORT:
             stage_handoffs = context.get("stage_handoffs", {})
             verified_count = sum(1 for h in stage_handoffs.values() if h.get("status") == "COMPLETED_VERIFIED")
-            limitations = context.get("limitations", [])
+            limitations = list(context.get("limitations", []))
 
-            status = "COMPLETED_VERIFIED" if not limitations else "COMPLETED_WITH_LIMITATIONS"
+            # Distinguish executed stages with limitations/failures from intentionally skipped stages (NOT_RUN)
+            stages_with_limitations = [
+                s_name for s_name, h in stage_handoffs.items()
+                if h.get("status") in ("COMPLETED_WITH_LIMITATIONS", "FAILED", "BLOCKED")
+            ]
+            unplanned_not_run = [
+                s_name for s_name, h in stage_handoffs.items()
+                if h.get("status") == "NOT_RUN" and not h.get("summary", "").startswith("Stage skipped: ")
+            ]
+            genuine_limitations = [
+                lim for lim in limitations
+                if not lim.startswith("Skipped stage ")
+            ]
+
+            has_limitations = bool(stages_with_limitations) or bool(unplanned_not_run) or bool(genuine_limitations)
+            status = "COMPLETED_WITH_LIMITATIONS" if has_limitations else "COMPLETED_VERIFIED"
             return {
                 "status": status,
                 "summary": f"Orchestrator finalized completion report: {verified_count}/{len(stage_handoffs)} stages verified",
-                "claims": [f"All planned stages executed or documented with explicit state"],
+                "claims": ["All planned stages executed or documented with explicit state"],
                 "evidence_refs": ["EVID-REPORT-FINAL"],
-                "limitations": list(limitations) if limitations else (["Minor limitations noted"] if status == "COMPLETED_WITH_LIMITATIONS" else []),
+                "limitations": limitations if limitations else (["Minor limitations noted"] if status == "COMPLETED_WITH_LIMITATIONS" else []),
                 "next_action": "Deliver handoff report to caller",
                 "tests": TaskTests(passed=["report_integrity"]),
             }

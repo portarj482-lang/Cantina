@@ -238,6 +238,49 @@ class StateMachineTestCase(unittest.TestCase):
             self.assertEqual(blocked_events[0].to_state, "BLOCKED")
             self.assertIn("PERMISSION_DENIED", blocked_events[0].reason)
 
+    def test_ledger_rejects_self_dependency(self):
+        ledger = TaskLedger()
+        task = TaskRecord(task_id="TASK-SELF", goal="Self dependent", dependencies=["TASK-SELF"])
+        with self.assertRaises(ValueError) as ctx:
+            ledger.register_task(task)
+        self.assertIn("cannot depend on itself", str(ctx.exception))
+
+    def test_ledger_rejects_circular_dependency(self):
+        ledger = TaskLedger()
+        task_a = TaskRecord(task_id="TASK-A", goal="Task A")
+        ledger.register_task(task_a)
+
+        task_b = TaskRecord(task_id="TASK-B", goal="Task B", dependencies=["TASK-A"])
+        ledger.register_task(task_b)
+
+        # Task C depends on B
+        task_c = TaskRecord(task_id="TASK-C", goal="Task C", dependencies=["TASK-B"])
+        ledger.register_task(task_c)
+
+        # Now try to register Task D which depends on C, but A depends on D -> cycle
+        # Or register Task A2 trying to depend on C when C depends on B depends on A
+        task_cycle = TaskRecord(task_id="TASK-CYCLE", goal="Cycle task", dependencies=["TASK-C"])
+        ledger.register_task(task_cycle)
+
+        # Try to register a task that closes a cycle with already registered tasks
+        # e.g. task_loop depends on TASK-C and has TASK-B depending on it, or mutual dependency:
+        ledger2 = TaskLedger()
+        t1 = TaskRecord(task_id="T1", goal="T1")
+        ledger2.register_task(t1)
+        t2 = TaskRecord(task_id="T2", goal="T2", dependencies=["T1"])
+        ledger2.register_task(t2)
+        # T1 cannot be updated or if a new task depends on T2 and T1 depends on it:
+        t_cycle = TaskRecord(task_id="T1_CIRC", goal="Circular", dependencies=["T2"])
+        # If we have T1 depending on T2 which depends on T1:
+        # Since T1 is registered, if we register T0 with dep T2, and T1 with dep T0:
+        ledger3 = TaskLedger()
+        t_x = TaskRecord(task_id="TX", goal="TX", dependencies=["TY"])
+        t_y = TaskRecord(task_id="TY", goal="TY", dependencies=["TX"])
+        ledger3.register_task(t_x)
+        with self.assertRaises(ValueError) as ctx:
+            ledger3.register_task(t_y)
+        self.assertIn("circular dependency", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

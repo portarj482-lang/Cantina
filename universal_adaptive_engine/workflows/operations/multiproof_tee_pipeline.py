@@ -498,7 +498,7 @@ class MultiproofTEEAnalystWorkflow(ArchitectureAnalystWorkflow):
             raise PermissionError(f"Artifact discovery boundary violation: {errors}")
 
         if missing:
-            if tc.target_id in ("base", "unknown-target") or not tc.target_root.exists() or len(list(tc.target_root.iterdir())) == 0:
+            if tc.target_id in ("base", "unknown-target") or not tc.target_root.exists() or not tc.target_root.is_dir() or len(list(tc.target_root.iterdir())) == 0:
                 raise FileNotFoundError(f"Multiproof TEE Invariant Analyst could not locate required TEE artifacts: {missing}")
             status = "COMPLETED_WITH_LIMITATIONS"
             summary = f"Multiproof TEE Invariant Analyst: INV-MULTIPROOF-03 is NOT_APPLICABLE to target '{tc.target_id}' (architecture: {tc.architecture}; TEE artifacts not present)"

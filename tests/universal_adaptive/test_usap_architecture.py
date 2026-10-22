@@ -202,6 +202,7 @@ class TestUSAPArchitecture(unittest.TestCase):
             self.assertTrue(tc.is_valid)
             self.assertEqual(tc.architecture, "rust")
             self.assertEqual(tc.target_root, standalone_target)
+            self.assertIsNone(tc.bounty_slug)
             self.assertIn(standalone_target / "crates", tc.source_roots)
             self.assertIsNotNone(tc.scope_manifest)
 
@@ -303,6 +304,7 @@ class TestUSAPArchitecture(unittest.TestCase):
         rep_weth = pipe_weth.execute({"target_root": str(pump_root), "bounty_slug": "pump-fun"})
         self.assertEqual(rep_weth.overall_status, "COMPLETED_WITH_LIMITATIONS")
         self.assertIn("NOT_APPLICABLE", rep_weth.stage_handoffs["DISCOVERY"]["summary"])
+        self.assertIn("NOT_APPLICABLE", rep_weth.stage_handoffs["VERIFICATION"]["summary"])
         self.assertIn("NOT_APPLICABLE", rep_weth.stage_handoffs["INDEPENDENT_REVIEW"]["summary"])
 
         # Multiproof TEE on pump-fun
@@ -312,6 +314,19 @@ class TestUSAPArchitecture(unittest.TestCase):
         self.assertIn("NOT_APPLICABLE", rep_tee.stage_handoffs["DISCOVERY"]["summary"])
         self.assertIn("NOT_APPLICABLE", rep_tee.stage_handoffs["VERIFICATION"]["summary"])
         self.assertIn("NOT_APPLICABLE", rep_tee.stage_handoffs["INDEPENDENT_REVIEW"]["summary"])
+
+    def test_target_context_resolver_subdirectory_bounty_slug_and_scope(self):
+        """Test that passing a subdirectory under bounties/<slug> properly resolves bounty_slug and finds parent scope.md."""
+        sub_root = self.workspace_root / "bounties" / "base" / "contracts"
+        self.assertTrue(sub_root.exists(), "Expected bounties/base/contracts directory to exist")
+
+        tc = TargetContextResolver.resolve(
+            context={"target_root": str(sub_root)},
+            workspace_root=self.workspace_root,
+        )
+        self.assertEqual(tc.bounty_slug, "base")
+        self.assertIsNotNone(tc.scope_manifest)
+        self.assertEqual(tc.scope_manifest, (self.workspace_root / "bounties" / "base" / "scope.md").resolve())
 
 
 if __name__ == "__main__":

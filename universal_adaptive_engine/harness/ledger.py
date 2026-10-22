@@ -50,6 +50,25 @@ class TaskLedger:
         if task.task_id in self._tasks:
             raise ValueError(f"Task with ID {task.task_id} already exists in ledger")
 
+        if task.task_id in task.dependencies:
+            raise ValueError(f"Task {task.task_id} cannot depend on itself")
+
+        # Detect circular dependencies in task graph
+        def would_create_cycle(target_id: str, deps: list[str], visited: set[str]) -> bool:
+            for dep in deps:
+                if dep == target_id:
+                    return True
+                if dep in visited:
+                    continue
+                visited.add(dep)
+                dep_task = self._tasks.get(dep)
+                if dep_task and would_create_cycle(target_id, dep_task.dependencies, visited):
+                    return True
+            return False
+
+        if would_create_cycle(task.task_id, task.dependencies, set()):
+            raise ValueError(f"Task {task.task_id} introduces a circular dependency in ledger")
+
         self._tasks[task.task_id] = task
         self._record_event(
             task_id=task.task_id,

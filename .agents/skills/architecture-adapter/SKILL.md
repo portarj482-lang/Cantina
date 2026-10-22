@@ -52,3 +52,9 @@ Subagent workflows access target operations exclusively through `self.adapter` a
 - Architecture-appropriate test execution (no EVM commands forced on Solana programs)
 - Accurate reporting of `NOT_APPLICABLE` or `NOT_VERIFIED` for unavailable runtimes
 - Safe filesystem containment within `target_root`
+
+### Subdirectory `bounty_slug` Resolution & Parent Manifest Discovery
+When `target_root` points to a deeply nested subdirectory (e.g., `bounties/base/contracts`), `TargetContextResolver` automatically traverses up the directory tree to determine the canonical top-level `bounty_slug` (`base`) and discovers the enclosing `scope.md` manifest. This ensures nested contract modules inherit the authenticated program scope and lock hash rather than failing closed on missing local manifests.
+
+### Named Operation Alias Dispatch
+The orchestrator's `run_operation` method dynamically resolves operation aliases (`dispute`, `delayed-weth`, `multiproof-tee`, `rpc-governance`) to their specialized domain pipelines. Within Cantina workspaces, operations are bound to `CantinaBountyAdapter` rather than defaulting to generic `HostEnvironmentAdapter`, guaranteeing that bounty-specific scope locks, memory records, and verification gates are enforced.

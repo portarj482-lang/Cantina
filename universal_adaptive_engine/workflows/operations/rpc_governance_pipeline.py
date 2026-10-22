@@ -93,12 +93,11 @@ class RPCGovernanceAnalystWorkflow(ArchitectureAnalystWorkflow):
         elif tc and (tc.target_root / "scope.md").exists():
             scope_file = tc.target_root / "scope.md"
         else:
-            bounty = context.get("bounty_slug") or (tc.bounty_slug if tc else "base")
-            candidate = workspace_root / "bounties" / bounty / "scope.md"
-            if candidate.exists():
-                scope_file = candidate
-            else:
-                scope_file = workspace_root / "bounties" / "base" / "scope.md"
+            bounty = context.get("bounty_slug") or (tc.bounty_slug if tc else None)
+            if bounty:
+                candidate = workspace_root / "bounties" / bounty / "scope.md"
+                if candidate.exists():
+                    scope_file = candidate
 
         scope_present = scope_file.exists() if scope_file else False
         try:

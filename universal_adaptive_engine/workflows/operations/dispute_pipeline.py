@@ -81,7 +81,7 @@ class DisputeAnalystWorkflow(ArchitectureAnalystWorkflow):
 
         if not found_contracts:
             # If target is base or missing files in an empty workspace, raise FileNotFoundError for diagnosed blocker
-            if tc.target_id in ("base", "unknown-target") or not target_root.exists() or len(list(target_root.iterdir())) == 0:
+            if tc.target_id in ("base", "unknown-target") or not target_root.exists() or not target_root.is_dir() or len(list(target_root.iterdir())) == 0:
                 raise FileNotFoundError(
                     f"Dispute Invariant Analyst could not locate required dispute contracts in {target_root}"
                 )

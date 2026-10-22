@@ -109,6 +109,111 @@ class HarnessVerticalSliceTestCase(unittest.TestCase):
         self.assertEqual(task1["status"], TaskState.BLOCKED.value)
         self.assertEqual(task1["blocker"]["category"], BlockerCategory.PERMISSION_DENIED.value)
 
+    def test_vertical_slice_challenger_failure_yields_failed_state(self):
+        import unittest.mock as mock
+        with mock.patch("hashlib.sha256") as mock_sha:
+            mock_hash_obj = mock.MagicMock()
+            mock_hash_obj.hexdigest.return_value = "0" * 64
+            mock_sha.return_value = mock_hash_obj
+
+            report = self.orchestrator.run_vertical_slice(
+                goal="Inspect artifact with simulated collision",
+                target_file="SAMPLE_ARTIFACT.md",
+            )
+            self.assertEqual(report.completion_state, "FAILED")
+            self.assertEqual(report.challenger_review["status"], "FAILED")
+            self.assertFalse(report.challenger_review["negative_control_verified"])
+            self.assertIn("Falsification failure", report.challenger_review["summary"])
+            self.assertTrue(any("Independent challenger negative control failed" in lim for lim in report.limitations))
+            self.assertEqual(len(report.tasks_run), 2)
+            task2 = report.tasks_run[1]
+            self.assertEqual(task2["status"], TaskState.FAILED.value)
+            self.assertEqual(report.findings[0]["status"], "REFUTED")
+            self.assertEqual(report.findings[0]["confidence"], "refuted")
+            self.assertEqual(report.adaptations[0]["decision"], "REJECTED")
+
+    def test_vertical_slice_directory_target(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            sub = Path(tmp_dir) / "subpkg"
+            sub.mkdir()
+            (sub / "file1.txt").write_text("content1", encoding="utf-8")
+            (sub / "file2.txt").write_text("content2", encoding="utf-8")
+
+            orch = UniversalAdaptiveOrchestrator(workspace_root=tmp_dir)
+            report = orch.run_vertical_slice(
+                goal="Inspect subpkg directory",
+                target_file="subpkg",
+            )
+            self.assertEqual(report.completion_state, "COMPLETED_VERIFIED")
+            self.assertEqual(report.challenger_review["status"], "PASSED")
+            self.assertTrue(report.challenger_review["negative_control_verified"])
+
+    def test_vertical_slice_unreadable_file_blocks_cleanly(self):
+        import os
+        unreadable_file = self.test_root / "UNREADABLE_FILE.txt"
+        unreadable_file.write_text("secret payload", encoding="utf-8")
+        unreadable_file.chmod(0o000)
+        try:
+            report = self.orchestrator.run_vertical_slice(
+                goal="Inspect unreadable artifact",
+                target_file="UNREADABLE_FILE.txt",
+            )
+            self.assertEqual(report.completion_state, "BLOCKED")
+            self.assertEqual(len(report.tasks_run), 2)
+            task2 = report.tasks_run[1]
+            self.assertEqual(task2["status"], TaskState.BLOCKED.value)
+            self.assertIn(task2["blocker"]["category"], (BlockerCategory.PERMISSION_DENIED.value, BlockerCategory.DEPENDENCY_FAILURE.value))
+        finally:
+            unreadable_file.chmod(0o755)
+
+    def test_vertical_slice_unreadable_file_in_directory_blocks_cleanly(self):
+        import os
+        sub = self.test_root / "unreadable_sub"
+        sub.mkdir()
+        unreadable_file = sub / "secret.txt"
+        unreadable_file.write_text("secret payload", encoding="utf-8")
+        unreadable_file.chmod(0o000)
+        try:
+            report = self.orchestrator.run_vertical_slice(
+                goal="Inspect directory with unreadable child",
+                target_file="unreadable_sub",
+            )
+            self.assertEqual(report.completion_state, "BLOCKED")
+            self.assertEqual(len(report.tasks_run), 2)
+            task2 = report.tasks_run[1]
+            self.assertEqual(task2["status"], TaskState.BLOCKED.value)
+            self.assertIn(task2["blocker"]["category"], (BlockerCategory.PERMISSION_DENIED.value, BlockerCategory.DEPENDENCY_FAILURE.value))
+        finally:
+            unreadable_file.chmod(0o755)
+
+    def test_evidence_record_directory_hash_collision_and_symlink_safety(self):
+        import os
+        from universal_adaptive_engine.models.evidence import EvidenceRecord
+
+        with tempfile.TemporaryDirectory() as td:
+            p1 = Path(td) / "empty_dir"
+            p2 = Path(td) / "broken_link_dir"
+            p3 = Path(td) / "cycle_dir"
+            p1.mkdir()
+            p2.mkdir()
+            p3.mkdir()
+
+            # Broken symlink in p2
+            os.symlink("nonexistent_path", p2 / "broken_link")
+
+            # Circular directory symlink in p3
+            os.symlink(p3, p3 / "loop_link")
+            (p3 / "data.txt").write_text("hello world", encoding="utf-8")
+
+            h_empty = EvidenceRecord.hash_artifact(p1)
+            h_broken = EvidenceRecord.hash_artifact(p2)
+            h_cycle = EvidenceRecord.hash_artifact(p3)
+
+            # Broken symlink dir must not collide with empty dir
+            self.assertNotEqual(h_empty, h_broken)
+            self.assertNotEqual(h_empty, h_cycle)
+            self.assertNotEqual(h_broken, h_cycle)
+
 
 if __name__ == "__main__":
     unittest.main()

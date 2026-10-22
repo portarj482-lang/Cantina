@@ -1,0 +1,13 @@
+{
+  "name": "universal-adaptive-intelligence",
+  "description": "Universal Adaptive Intelligence Architecture: 14-stage lifecycle orchestration, USAP protocol, canonical schemas, domain invariant oracles, and 12 specialist workflows.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Run universal adaptive pipeline on current target context",
+    "Discover target architecture and coexisting manifests",
+    "Execute dispute system invariant verification",
+    "Validate delayed WETH solvency and timelock delays",
+    "Verify AWS Nitro TEE prover attestation integrity",
+    "Audit RPC governance and generate session journal"
+  ]
+}

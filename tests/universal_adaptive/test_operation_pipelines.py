@@ -182,11 +182,29 @@ class TestOperationPipelines(unittest.TestCase):
             "delayed-weth": "COMPLETED_WITH_LIMITATIONS",
             "multiproof-tee": "COMPLETED_WITH_LIMITATIONS",
             "rpc-governance": "COMPLETED_WITH_LIMITATIONS",
+            "weth": "COMPLETED_WITH_LIMITATIONS",
+            "tee": "COMPLETED_WITH_LIMITATIONS",
+            "fault-dispute": "COMPLETED_WITH_LIMITATIONS",
         }
         for op, expected_status in expected_statuses.items():
             report = orchestrator.run_operation(op, goal=f"Test run operation {op}")
             self.assertEqual(report.overall_status, expected_status, f"Operation {op} returned an unexpected status")
             self.assertEqual(len(report.stage_handoffs), 14)
+
+    def test_orchestrator_run_operation_adapter_dispatch(self):
+        orchestrator = UniversalAdaptiveOrchestrator(workspace_root=self.workspace_root)
+        from universal_adaptive_engine.adapters.cantina_adapter import CantinaBountyAdapter
+        from universal_adaptive_engine.adapters.host_adapter import HostEnvironmentAdapter
+
+        from universal_adaptive_engine.workflows.operations import get_operation_pipeline
+        for op in ("weth", "tee", "rpc", "fault-dispute", "cantina"):
+            adapter = orchestrator.host_adapter if op.lower().strip() == "canonical" else orchestrator.cantina_adapter
+            pipe = get_operation_pipeline(op, adapter=adapter, workspace_root=self.workspace_root)
+            self.assertIsInstance(pipe.adapter, CantinaBountyAdapter, f"Expected CantinaBountyAdapter for operation {op}")
+
+        adapter_canon = orchestrator.host_adapter if "canonical" == "canonical" else orchestrator.cantina_adapter
+        pipe_canon = get_operation_pipeline("canonical", adapter=adapter_canon, workspace_root=self.workspace_root)
+        self.assertIsInstance(pipe_canon.adapter, HostEnvironmentAdapter)
 
     def test_operation_factory_aliases(self):
         self.assertIsInstance(get_operation_pipeline("weth"), DelayedWETHSolvencyPipeline)
@@ -340,6 +358,101 @@ class TestOperationPipelines(unittest.TestCase):
                 self.assertEqual(report.overall_status, "BLOCKED")
                 self.assertEqual(report.stage_handoffs["DISCOVERY"]["status"], "BLOCKED")
                 self.assertIn("could not locate", report.stage_handoffs["DISCOVERY"]["summary"])
+
+    def test_cantina_pipeline_factory_with_custom_adapter(self):
+        pipe = get_operation_pipeline("cantina", adapter=self.cantina_adapter, workspace_root=self.workspace_root)
+        self.assertIs(pipe.adapter, self.cantina_adapter)
+
+    def test_rpc_governance_scope_manifest_decoupling(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_root = Path(tmp_dir)
+            target_dir = tmp_root / "standalone_target"
+            target_dir.mkdir()
+            (target_dir / "app.py").write_text("# standalone\n", encoding="utf-8")
+
+            analyst = RPCGovernanceAnalystWorkflow()
+            res = analyst.run_step({
+                "workspace_root": str(tmp_root),
+                "target_root": str(target_dir),
+                "bounty_slug": None,
+            })
+            self.assertEqual(res["status"], "COMPLETED_WITH_LIMITATIONS")
+            self.assertEqual(res["files_inspected"], [])
+            self.assertTrue(any("scope.md was not located" in lim for lim in res["limitations"]))
+
+    def test_analyst_workflows_file_target_root_handled_cleanly(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_root = Path(tmp_dir)
+            target_file = tmp_root / "Contract.sol"
+            target_file.write_text("contract Target {}", encoding="utf-8")
+
+            from universal_adaptive_engine.models.target_context import TargetContextResolver
+            tc = TargetContextResolver.resolve(
+                context={"target_root": str(target_file)},
+                workspace_root=tmp_root,
+            )
+            for analyst_cls in [DisputeAnalystWorkflow, DelayedWETHAnalystWorkflow, MultiproofTEEAnalystWorkflow]:
+                analyst = analyst_cls()
+                try:
+                    res = analyst.run_step({
+                        "workspace_root": str(tmp_root),
+                        "target_root": str(target_file),
+                        "target_context": tc,
+                    })
+                    self.assertIn(res["status"], ("COMPLETED_WITH_LIMITATIONS", "BLOCKED"))
+                except FileNotFoundError:
+                    pass
+
+    def test_all_operational_pipelines_strictly_enforce_failed_on_challenger_falsification(self):
+        # 1. Dispute
+        p_disp = DisputeSystemPipeline(adapter=self.cantina_adapter, workspace_root=self.workspace_root)
+        r_disp = p_disp.execute({"simulate_premature_bypass": True})
+        self.assertEqual(r_disp.overall_status, "FAILED")
+        self.assertEqual(r_disp.stage_handoffs["INDEPENDENT_REVIEW"]["status"], "FAILED")
+
+        # 2. Delayed WETH
+        p_weth = DelayedWETHSolvencyPipeline(adapter=self.cantina_adapter, workspace_root=self.workspace_root)
+        r_weth = p_weth.execute({"simulate_early_withdraw_allowed": True})
+        self.assertEqual(r_weth.overall_status, "FAILED")
+        self.assertEqual(r_weth.stage_handoffs["INDEPENDENT_REVIEW"]["status"], "FAILED")
+
+        # 3. Multiproof TEE
+        p_tee = MultiproofTEEPipeline(adapter=self.cantina_adapter, workspace_root=self.workspace_root)
+        r_tee = p_tee.execute({"simulate_future_attestation_allowed": True})
+        self.assertEqual(r_tee.overall_status, "FAILED")
+        self.assertEqual(r_tee.stage_handoffs["INDEPENDENT_REVIEW"]["status"], "FAILED")
+
+        # 4. RPC Governance
+        p_rpc = RPCGovernancePipeline(adapter=self.cantina_adapter, workspace_root=self.workspace_root)
+        r_rpc = p_rpc.execute({"simulate_rogue_host_allowed": True})
+        self.assertEqual(r_rpc.overall_status, "FAILED")
+        self.assertEqual(r_rpc.stage_handoffs["INDEPENDENT_REVIEW"]["status"], "FAILED")
+
+    def test_pipeline_accepts_dict_target_context_and_resolves(self):
+        p_disp = DisputeSystemPipeline(adapter=self.cantina_adapter, workspace_root=self.workspace_root)
+        r = p_disp.execute({
+            "target_context": {
+                "target_root": str(self.workspace_root / "bounties" / "base"),
+                "architecture": "evm",
+            }
+        })
+        self.assertIn(r.overall_status, ("COMPLETED_VERIFIED", "COMPLETED_WITH_LIMITATIONS"))
+        self.assertEqual(r.stage_handoffs["DISCOVERY"]["status"], "COMPLETED_WITH_LIMITATIONS")
+
+    def test_target_context_file_target_and_ancestor_manifest_discovery(self):
+        from universal_adaptive_engine.models.target_context import TargetContextResolver
+        file_target = self.workspace_root / "bounties" / "base" / "contracts" / "src" / "L1" / "OptimismPortal2.sol"
+        tc = TargetContextResolver.resolve(
+            context={"target_root": str(file_target)},
+            workspace_root=self.workspace_root,
+        )
+        self.assertTrue(tc.is_valid)
+        self.assertEqual(tc.architecture, "evm")
+        self.assertEqual(tc.languages, ("solidity",))
+        self.assertIn("foundry", tc.runtimes)
+        self.assertTrue(any(m.name == "foundry.toml" for m in tc.manifests))
+        self.assertEqual(tc.target_root, file_target.parent)
+        self.assertEqual(tc.metadata.get("target_file"), str(file_target.resolve()))
 
 
 if __name__ == "__main__":

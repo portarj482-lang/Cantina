@@ -17,7 +17,11 @@ class TargetDiscoveryAdapter(BaseArchitectureAdapter):
     ):
         super().__init__(name="target-discovery-adapter", version="1.0.0")
         self.workspace_root = Path(workspace_root).resolve()
-        self.target_root = Path(target_root).resolve() if target_root else None
+        if target_root:
+            tr = Path(target_root)
+            self.target_root = (self.workspace_root / tr).resolve() if not tr.is_absolute() else tr.resolve()
+        else:
+            self.target_root = None
 
     def discover(self, context: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         """Perform architecture-aware discovery and return normalized TargetContext."""

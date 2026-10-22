@@ -141,6 +141,18 @@ class AdaptersTestCase(unittest.TestCase):
         self.assertTrue(tools["anvil"]["available"])
         self.assertTrue(tools["cargo"]["available"])
 
+    def test_target_discovery_adapter_resolves_relative_target_root(self):
+        from universal_adaptive_engine.adapters.discovery import TargetDiscoveryAdapter
+        disc_adapter = TargetDiscoveryAdapter(
+            workspace_root=self.workspace_root,
+            target_root="bounties/base",
+        )
+        res = disc_adapter.discover()
+        self.assertTrue(res["is_valid"])
+        self.assertEqual(res["architecture"], "evm")
+        self.assertEqual(res["target_context"].target_id, "base")
+        self.assertEqual(res["target_context"].target_root, (self.workspace_root / "bounties" / "base").resolve())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -118,7 +118,8 @@ class TargetContextResolver:
         bounty_slug: Optional[str] = explicit_bounty
 
         if explicit_target:
-            target_path = Path(explicit_target).resolve()
+            raw_path = Path(explicit_target)
+            target_path = (ws / raw_path).resolve() if not raw_path.is_absolute() else raw_path.resolve()
             if target_path.is_file():
                 target_file = target_path
                 target_root = target_path.parent

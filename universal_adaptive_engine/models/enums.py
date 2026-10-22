@@ -109,3 +109,20 @@ class CapabilityStatus(str, Enum):
     BLOCKED = "BLOCKED"
     FAILED = "FAILED"
     UNKNOWN = "UNKNOWN"
+
+
+class ResultStatus(str, Enum):
+    PASS = "PASS"
+    FAIL = "FAIL"
+    BLOCKED = "BLOCKED"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+    NOT_VERIFIED = "NOT_VERIFIED"
+
+
+class ResolutionStatus(str, Enum):
+    CONFIRMED = "CONFIRMED"
+    PARTIAL = "PARTIAL"
+    AMBIGUOUS = "AMBIGUOUS"
+    UNSUPPORTED = "UNSUPPORTED"
+    INVALID = "INVALID"
+

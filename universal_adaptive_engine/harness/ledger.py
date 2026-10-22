@@ -2,6 +2,11 @@
 from __future__ import annotations
 import json
 import os
+try:
+    import fcntl
+except ImportError:
+    fcntl = None  # Non-POSIX fallback
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -188,39 +193,62 @@ class TaskLedger:
             return list(self._events)
         return [e for e in self._events if e.task_id == task_id]
 
+    @contextmanager
+    def _file_lock(self, exclusive: bool = True):
+        """Acquire an advisory flock on an adjacent lock file if persistence is enabled."""
+        if not self.persistence_path or fcntl is None:
+            yield
+            return
+        lock_path = Path(str(self.persistence_path) + ".lock")
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        mode = fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH
+        with open(lock_path, "a", encoding="utf-8") as lock_file:
+            fcntl.flock(lock_file.fileno(), mode)
+            try:
+                yield
+            finally:
+                try:
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+                except OSError:
+                    pass
+
     def save(self) -> None:
-        """Persist tasks and events to file atomically."""
+        """Persist tasks and events to file atomically with advisory file locking."""
         if not self.persistence_path:
             return
-        self.persistence_path.parent.mkdir(parents=True, exist_ok=True)
-        payload = {
-            "tasks": {tid: t.to_dict() for tid, t in self._tasks.items()},
-            "events": [e.to_dict() for e in self._events],
-        }
-        temp_file = self.persistence_path.with_suffix(f".tmp.{os.getpid()}")
-        try:
-            with open(temp_file, "w", encoding="utf-8") as f:
-                json.dump(payload, f, indent=2)
-            os.replace(temp_file, self.persistence_path)
-        except Exception:
-            if temp_file.exists():
-                temp_file.unlink()
-            raise
+        with self._file_lock(exclusive=True):
+            self.persistence_path.parent.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "tasks": {tid: t.to_dict() for tid, t in self._tasks.items()},
+                "events": [e.to_dict() for e in self._events],
+            }
+            temp_file = self.persistence_path.with_suffix(f".tmp.{os.getpid()}")
+            try:
+                with open(temp_file, "w", encoding="utf-8") as f:
+                    json.dump(payload, f, indent=2)
+                os.replace(temp_file, self.persistence_path)
+            except Exception:
+                if temp_file.exists():
+                    temp_file.unlink()
+                raise
 
     def load(self) -> None:
-        """Load tasks and events from file with corruption resilience."""
-        if not self.persistence_path or not self.persistence_path.exists():
+        """Load tasks and events from file with corruption resilience and shared locking."""
+        if not self.persistence_path:
             return
-        try:
-            with open(self.persistence_path, "r", encoding="utf-8") as f:
-                payload = json.load(f)
-            self._tasks = {
-                tid: TaskRecord.from_dict(tdata)
-                for tid, tdata in payload.get("tasks", {}).items()
-            }
-            self._events = [
-                LedgerEvent(**edata) for edata in payload.get("events", [])
-            ]
-        except (json.JSONDecodeError, OSError):
-            self._tasks = {}
-            self._events = []
+        with self._file_lock(exclusive=False):
+            if not self.persistence_path.exists():
+                return
+            try:
+                with open(self.persistence_path, "r", encoding="utf-8") as f:
+                    payload = json.load(f)
+                self._tasks = {
+                    tid: TaskRecord.from_dict(tdata)
+                    for tid, tdata in payload.get("tasks", {}).items()
+                }
+                self._events = [
+                    LedgerEvent(**edata) for edata in payload.get("events", [])
+                ]
+            except (json.JSONDecodeError, OSError):
+                self._tasks = {}
+                self._events = []

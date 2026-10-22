@@ -134,8 +134,12 @@ class AdaptersTestCase(unittest.TestCase):
     def test_host_adapter_discovers_toolchain_and_compilers(self):
         disc = self.host_adapter.discover()
         tools = disc["tools"]
-        for tool_name in ["solc", "node", "tsc", "cargo", "docker", "anvil", "forge"]:
+        for tool_name in ["solc", "node", "tsc", "cargo", "docker", "anvil", "forge", "cast", "anchor"]:
             self.assertIn(tool_name, tools)
+        # Verify Foundry and Cargo toolchain discovery from standard user directories
+        self.assertTrue(tools["forge"]["available"])
+        self.assertTrue(tools["anvil"]["available"])
+        self.assertTrue(tools["cargo"]["available"])
 
 
 if __name__ == "__main__":

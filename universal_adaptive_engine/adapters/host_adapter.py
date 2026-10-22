@@ -29,11 +29,22 @@ class HostEnvironmentAdapter(BaseArchitectureAdapter):
         """Discover actual host environment components and capabilities."""
         binaries_to_check = [
             "python3", "git", "bash", "grep", "find", "curl", "anvil", "forge",
-            "solc", "node", "tsc", "cargo", "docker"
+            "cast", "solc", "node", "tsc", "cargo", "anchor", "docker"
         ]
+        user_tool_dirs = [
+            Path.home() / ".foundry" / "bin",
+            Path.home() / ".cargo" / "bin",
+            Path.home() / ".local" / "bin",
+            Path("/usr/local/bin"),
+        ]
+        search_path = os.environ.get("PATH", "")
+        for d in user_tool_dirs:
+            if d.exists() and str(d) not in search_path:
+                search_path = f"{search_path}:{d}"
+
         discovered_tools = {}
         for b in binaries_to_check:
-            loc = shutil.which(b)
+            loc = shutil.which(b, path=search_path)
             discovered_tools[b] = {
                 "available": loc is not None,
                 "path": loc,
@@ -189,12 +200,26 @@ class HostEnvironmentAdapter(BaseArchitectureAdapter):
             else:
                 cmd = [str(inputs)]
             try:
+                env = os.environ.copy()
+                user_tool_dirs = [
+                    Path.home() / ".foundry" / "bin",
+                    Path.home() / ".cargo" / "bin",
+                    Path.home() / ".local" / "bin",
+                    Path("/usr/local/bin"),
+                ]
+                search_path = env.get("PATH", "")
+                for d in user_tool_dirs:
+                    if d.exists() and str(d) not in search_path:
+                        search_path = f"{search_path}:{d}"
+                env["PATH"] = search_path
+
                 proc = subprocess.run(
                     cmd,
                     cwd=str(self.workspace_root),
                     capture_output=True,
                     text=True,
                     timeout=30,
+                    env=env,
                 )
                 evidence = [
                     EvidenceRecord(

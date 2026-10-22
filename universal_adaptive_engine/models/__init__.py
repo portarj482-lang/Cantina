@@ -11,6 +11,8 @@ from universal_adaptive_engine.models.enums import (
     EvidenceType,
     BlockerCategory,
     CapabilityStatus,
+    ResultStatus,
+    ResolutionStatus,
 )
 from universal_adaptive_engine.models.blocker import BlockerRecord
 from universal_adaptive_engine.models.task import (
@@ -61,6 +63,8 @@ __all__ = [
     "EvidenceType",
     "BlockerCategory",
     "CapabilityStatus",
+    "ResultStatus",
+    "ResolutionStatus",
     "BlockerRecord",
     "TaskRecord",
     "TaskTests",

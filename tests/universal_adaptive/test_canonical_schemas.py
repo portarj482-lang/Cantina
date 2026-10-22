@@ -29,6 +29,8 @@ from universal_adaptive_engine.models import (
     CapabilityValidationError,
     BlockerRecord,
     BlockerCategory,
+    ResultStatus,
+    ResolutionStatus,
 )
 
 
@@ -347,6 +349,21 @@ class CanonicalSchemasTestCase(unittest.TestCase):
         )
         with self.assertRaises(FindingValidationError):
             finding.validate()
+
+
+    def test_result_and_resolution_status_enums(self):
+        """Verify ResultStatus and ResolutionStatus conform to USAP_Codable_Refactor spec."""
+        self.assertEqual(ResultStatus.PASS, "PASS")
+        self.assertEqual(ResultStatus.FAIL, "FAIL")
+        self.assertEqual(ResultStatus.BLOCKED, "BLOCKED")
+        self.assertEqual(ResultStatus.NOT_APPLICABLE, "NOT_APPLICABLE")
+        self.assertEqual(ResultStatus.NOT_VERIFIED, "NOT_VERIFIED")
+
+        self.assertEqual(ResolutionStatus.CONFIRMED, "CONFIRMED")
+        self.assertEqual(ResolutionStatus.PARTIAL, "PARTIAL")
+        self.assertEqual(ResolutionStatus.AMBIGUOUS, "AMBIGUOUS")
+        self.assertEqual(ResolutionStatus.UNSUPPORTED, "UNSUPPORTED")
+        self.assertEqual(ResolutionStatus.INVALID, "INVALID")
 
 
 if __name__ == "__main__":

@@ -226,6 +226,33 @@ class TestSpecialistAgentWorkflows(unittest.TestCase):
         })
         self.assertEqual(h.status, "COMPLETED_VERIFIED")
         self.assertEqual(len(h.tests.passed), 1)
+        self.assertEqual(len(h.commands_run), 1)
+        self.assertEqual(h.commands_run[0]["exit_code"], 0)
+        self.assertIn("output_digest", h.commands_run[0])
+        self.assertEqual(len(h.commands_run[0]["output_digest"]), 64)
+
+    def test_verification_engineer_forge_detection(self):
+        wf = VerificationEngineerWorkflow(self.host_adapter)
+        env = wf._resolve_tool_env()
+        forge_bin = wf._resolve_forge_binary(env)
+        self.assertIsNotNone(forge_bin, "Forge binary should be discoverable via toolchain search")
+
+    def test_verification_engineer_fails_on_broken_test(self):
+        wf = VerificationEngineerWorkflow(self.host_adapter)
+        with self.assertRaises(RuntimeError) as ctx:
+            wf.run_step({
+                "stage": WorkflowStage.VERIFICATION,
+                "workspace_root": str(self.workspace_root),
+                "test_commands": ["false"],
+            })
+        self.assertIn("Deterministic verification tests failed", str(ctx.exception))
+
+        h = wf.execute({
+            "stage": WorkflowStage.VERIFICATION,
+            "workspace_root": str(self.workspace_root),
+            "test_commands": ["false"],
+        })
+        self.assertIn(h.status, ["FAILED", "BLOCKED"])
 
     def test_independent_challenger_negative_control(self):
         wf = IndependentChallengerWorkflow(self.host_adapter)

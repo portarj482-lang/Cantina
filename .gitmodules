@@ -1,3 +1,6 @@
 [submodule "spend-permissions"]
 	path = bounties/base/spend-permissions
 	url = https://github.com/coinbase/spend-permissions.git
+[submodule "onchainsummer.xyz"]
+	path = onchainsummer.xyz
+	url = https://github.com/base/onchainsummer.xyz.git

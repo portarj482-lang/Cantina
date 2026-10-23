@@ -46,3 +46,6 @@
 [submodule "base"]
 	path = bounties/base/base
 	url = https://github.com/base/base.git
+[submodule "base-anvil"]
+	path = base-anvil
+	url = https://github.com/base/base-anvil.git

@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-10
 **Status:** Nothing here has been run. `global/tooling.md` lists every scanner as MISSING, so every executor stops at its first step until its tool is installed and checked.
-**Source:** role specifications in `global/agents/`. The registry currently contains 43 role profiles, including five Solana extensions.
+**Source:** role specifications in `global/agents/`. The registry currently contains 51 role profiles (49 executable capability profiles matching `security-mesh` `AGENT_REGISTRY` + 2 specialized reasoning roles in `bug-hunting-system.md`), including five Solana extensions. Reconciled via `scripts/reconcile-registries.ts`.
 **Layout:** `CONTRACT.md` is the shared policy; each role has a profile file and a unique learning/playbook entry in `PLAYBOOKS.md`. Agents read the shared contract, own profile, and matching playbook before role work.
 
 ---

@@ -1,0 +1,10 @@
+{
+  "profile_name": "analysis-readonly",
+  "filesystem": "read-only",
+  "write_paths": ["bounties/<slug>/scans/", "maintenance/reports/"],
+  "network": "none",
+  "max_memory_mb": 4096,
+  "max_cpu_cores": 2,
+  "timeout_seconds": 300,
+  "allow_root": false
+}

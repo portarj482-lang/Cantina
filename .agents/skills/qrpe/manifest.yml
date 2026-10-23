@@ -1,0 +1,36 @@
+name: qrpe
+version: 1.0.0
+description: Quantum Recursive Pipeline Engineer for Cantina smart-contract security infrastructure.
+author: Principal Autonomous Systems Architect
+license: MIT
+tools:
+  - slither
+  - aderyn
+  - semgrep
+  - solhint
+  - forge
+  - cast
+  - anvil
+  - halmos
+  - mythril
+  - echidna
+  - medusa
+  - anchor
+  - solana-test-validator
+schemas:
+  input: schemas/input.schema.json
+  output: schemas/output.schema.json
+  canonical: schemas/qrpe-schemas.json
+sandboxes:
+  readonly: sandboxes/analysis-readonly.json
+  static: sandboxes/static-analysis.json
+  dynamic: sandboxes/foundry-test.json
+  symbolic: sandboxes/symbolic-analysis.json
+adapters:
+  slither: adapters/slither_adapter.py
+  aderyn: adapters/aderyn_adapter.py
+  semgrep: adapters/semgrep_adapter.py
+  halmos: adapters/halmos_adapter.py
+  mythril: adapters/mythril_adapter.py
+  foundry: adapters/foundry_adapter.py
+  solana: adapters/solana_adapter.py

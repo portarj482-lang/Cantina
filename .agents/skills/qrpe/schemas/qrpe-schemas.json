@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QRPECanonicalSchemas",
+  "definitions": {
+    "qrpe_audit_record": {
+      "type": "object",
+      "required": ["run_id", "timestamp", "scope_hash", "observed_state", "discrepancies", "outcome"],
+      "properties": {
+        "run_id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "scope_hash": { "type": "string" },
+        "observed_state": { "type": "object" },
+        "discrepancies": { "type": "array" },
+        "outcome": { "type": "string", "enum": ["PASS", "FAIL", "BLOCKED", "PARTIALLY_VERIFIED", "VERIFIED_COMPLETE"] }
+      }
+    },
+    "tool_execution_evidence": {
+      "type": "object",
+      "required": ["tool_id", "version", "command", "exit_code", "output_sha256", "duration_ms"],
+      "properties": {
+        "tool_id": { "type": "string" },
+        "version": { "type": "string" },
+        "command": { "type": "string" },
+        "exit_code": { "type": "integer" },
+        "output_sha256": { "type": "string" },
+        "duration_ms": { "type": "number" },
+        "raw_output_path": { "type": "string" }
+      }
+    },
+    "dual_plane_divergence_report": {
+      "type": "object",
+      "required": ["finding_id", "block_number", "provider_a", "provider_b", "divergence_count", "status"],
+      "properties": {
+        "finding_id": { "type": "string" },
+        "block_number": { "type": "integer" },
+        "provider_a": { "type": "string" },
+        "provider_b": { "type": "string" },
+        "runs_count": { "type": "integer", "minimum": 5 },
+        "divergence_count": { "type": "integer" },
+        "status": { "type": "string", "enum": ["VERIFIED_ZERO_DIVERGENCE", "DIVERGENCE_DETECTED", "UNRESOLVED"] }
+      }
+    },
+    "pipeline_stage_handoff": {
+      "type": "object",
+      "required": ["stage_from", "stage_to", "timestamp", "input_artifacts", "output_artifacts", "gate_status"],
+      "properties": {
+        "stage_from": { "type": "string" },
+        "stage_to": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "input_artifacts": { "type": "array", "items": { "type": "string" } },
+        "output_artifacts": { "type": "array", "items": { "type": "string" } },
+        "gate_status": { "type": "string", "enum": ["GATE_PASSED", "GATE_FAILED", "GATE_BLOCKED"] }
+      }
+    }
+  }
+}

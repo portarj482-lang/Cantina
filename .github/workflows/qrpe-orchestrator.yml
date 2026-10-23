@@ -1,0 +1,86 @@
+name: QRPE Autonomous Pipeline & Verification Orchestrator
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+concurrency:
+  group: qrpe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hygiene-and-reconcile:
+    name: Monorepo Hygiene & Registry Parity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify Monorepo Hygiene Gate
+        run: |
+          make audit
+
+      - name: Install Mesh Dependencies
+        run: |
+          cd security-mesh/security-mesh
+          npm ci
+
+      - name: Verify Agent & Oracle Registry Reconciliation
+        run: |
+          npx --prefix security-mesh/security-mesh tsx scripts/reconcile-registries.ts --verify
+
+  test-suites:
+    name: Universal Adaptive & Security Mesh Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js & Python
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run Python Universal Adaptive Test Suite
+        run: |
+          python3 -m unittest discover -s tests/universal_adaptive
+
+      - name: Run TypeScript Security Mesh Test Suite
+        run: |
+          cd security-mesh/security-mesh
+          npm ci
+          npm test
+
+  pipeline-dry-run:
+    name: QRPE Workflow Packs A-G Dry-Run
+    runs-on: ubuntu-latest
+    needs: [hygiene-and-reconcile, test-suites]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Execute QRPE Full Pipeline Dry-Run
+        run: |
+          ./scripts/run-qrpe-pipeline.sh --dry-run

@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "caseId": "F-001",
+  "externalFindingReference": "Cantina Finding #1736",
+  "status": "hypothesis_only",
+  "executionEnabled": false,
+  "target": null,
+  "requiredBeforeExecution": [
+    "independently_verified_program_scope",
+    "independent_source_attestation_reviewed_for_G1",
+    "repository_url",
+    "exact_source_commit",
+    "target_addresses",
+    "chain_id",
+    "nonzero_pinned_fork_block",
+    "allowed_test_methods",
+    "scope_expiry",
+    "isolated_runner_attestation"
+  ],
+  "suiteIds": [
+    {
+      "id": "build",
+      "requiredAssertions": ["build_completed"],
+      "dispatchEnabled": false
+    },
+    {
+      "id": "baseline-tests",
+      "requiredAssertions": ["baseline_passed"],
+      "dispatchEnabled": false
+    },
+    {
+      "id": "revocation",
+      "requiredAssertions": ["valid_pre_revocation_signature", "same_digest_and_signature", "post_revocation_erc1271_accepts_same_signature"],
+      "mustCompareSameDigest": true,
+      "mustCompareSameSignatureBytes": true,
+      "dispatchEnabled": false
+    },
+    {
+      "id": "patched-negative-control",
+      "requiredAssertions": ["post_revocation_signature_rejected_by_patch"],
+      "patchMustBeIndependentlyReviewed": true,
+      "dispatchEnabled": false
+    },
+    {
+      "id": "permit2-fork",
+      "optional": true,
+      "requiredAssertions": ["permit2_prerequisites_verified", "balance_delta_measured"],
+      "mustBeInScope": true,
+      "dispatchEnabled": false
+    }
+  ],
+  "statusSeparation": {
+    "executionStatusDoesNotConfirmFinding": true,
+    "findingStatusDoesNotApproveReview": true,
+    "reviewDoesNotAuthorizeSubmission": true,
+    "submissionConnectorConfigured": false
+  }
+}

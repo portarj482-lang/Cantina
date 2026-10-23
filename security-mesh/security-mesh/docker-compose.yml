@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: mesh
+      POSTGRES_PASSWORD: mesh_dev_password
+      POSTGRES_DB: security_mesh
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - mesh_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mesh -d security_mesh"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  mesh_pgdata:

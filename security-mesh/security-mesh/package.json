@@ -1,0 +1,37 @@
+{
+  "name": "antigravity-security-mesh",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fail-closed foundation for authorized smart-contract security research workflows.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:integration": "vitest run tests/database.integration.test.ts",
+    "test:watch": "vitest",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "runner:worker": "node runner/worker.mjs",
+    "source-manifest": "node scripts/generate-source-manifest.mjs",
+    "smoke": "node --experimental-strip-types --experimental-loader=./scripts/ts-loader.mjs scripts/smoke-check.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^1.30.0",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.6.2",
+    "pg": "^8.16.3",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "@types/pg": "^8.15.5",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

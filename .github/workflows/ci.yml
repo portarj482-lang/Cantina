@@ -28,6 +28,18 @@ jobs:
           fi
           echo "Repo hygiene check passed: zero tracked runtime artifacts."
 
+      - name: Generate Untracked Size Audit Report
+        run: |
+          git status --porcelain -uall | awk '/^\?\?/ {print substr($0,4)}' | tr '\n' '\0' > /tmp/untracked0.list
+          cat /tmp/untracked0.list | du --files0-from=- -sb 2>/dev/null | sort -rn | head -n 200 > /tmp/top200_untracked.txt || true
+
+      - name: Upload Top-200 Untracked Audit Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: top200-untracked-audit
+          path: /tmp/top200_untracked.txt
+          if-no-files-found: warn
+
   test-python:
     name: Python Test Suite (${{ matrix.python-version }})
     runs-on: ubuntu-latest

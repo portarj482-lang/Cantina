@@ -42,7 +42,6 @@ broadcast/
 # Logs & scratch
 logs/
 *.log
-!maintenance/reports/**/*.log
 *.pid
 scratch/
 perception_mesh_log.jsonl

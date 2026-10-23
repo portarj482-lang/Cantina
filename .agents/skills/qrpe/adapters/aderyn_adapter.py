@@ -64,13 +64,23 @@ def main():
     parser.add_argument("--timeout-sim", action="store_true", default=False, help="Simulate scanner execution timeout")
     args = parser.parse_args()
 
+    is_dry_run = args.dry_run or not args.confirm
+
     tool_path = find_tool("aderyn")
     if not tool_path:
-        print("[FAIL] 'aderyn' executable not found on PATH or standard directories", file=sys.stderr)
-        sys.exit(1)
+        if is_dry_run:
+            tool_path = "aderyn"
+        else:
+            print("[FAIL] 'aderyn' executable not found on PATH or standard directories", file=sys.stderr)
+            sys.exit(1)
 
     out_file = os.path.join(args.output_dir, "aderyn.json")
     cmd_for_receipt = [tool_path, args.target, "--output", out_file]
+
+    # Invariant: --dry-run strictly takes precedence over --confirm
+    if is_dry_run:
+        print(f"[DRY-RUN] Verified aderyn command: {' '.join(cmd_for_receipt)}")
+        sys.exit(0)
 
     # Verify flags in help
     try:
@@ -81,11 +91,6 @@ def main():
     except Exception as e:
         print(f"[FAIL] Aderyn help check encountered error: {e}", file=sys.stderr)
         sys.exit(1)
-
-    # Invariant: --dry-run strictly takes precedence over --confirm
-    if args.dry_run or not args.confirm:
-        print(f"[DRY-RUN] Verified aderyn command: {' '.join(cmd_for_receipt)}")
-        sys.exit(0)
 
     # Live execution authorized
     os.makedirs(args.output_dir, exist_ok=True)

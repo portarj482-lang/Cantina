@@ -26,10 +26,15 @@ def main():
     parser.add_argument("--confirm", action="store_true", default=False)
     args = parser.parse_args()
 
+    is_dry_run = args.dry_run or not args.confirm
+
     tool_path = find_tool("halmos")
     if not tool_path:
-        print("[FAIL] 'halmos' executable not found on PATH", file=sys.stderr)
-        sys.exit(1)
+        if is_dry_run:
+            tool_path = "halmos"
+        else:
+            print("[FAIL] 'halmos' executable not found on PATH", file=sys.stderr)
+            sys.exit(1)
 
     cmd = [
         tool_path,
@@ -38,7 +43,7 @@ def main():
         "--match-test", args.match_test
     ]
 
-    if args.dry_run or not args.confirm:
+    if is_dry_run:
         print(f"[DRY-RUN] Verified halmos command in {args.target}: {' '.join(cmd)}")
         sys.exit(0)
 

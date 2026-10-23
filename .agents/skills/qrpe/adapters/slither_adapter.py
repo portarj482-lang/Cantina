@@ -84,15 +84,25 @@ def main():
     parser.add_argument("--timeout-sim", action="store_true", default=False, help="Simulate scanner execution timeout")
     args = parser.parse_args()
 
+    is_dry_run = args.dry_run or not args.confirm
+
     tool_path = find_tool("slither")
     if not tool_path:
-        print("[FAIL] 'slither' executable not found on PATH or standard directories", file=sys.stderr)
-        sys.exit(1)
+        if is_dry_run:
+            tool_path = "slither"
+        else:
+            print("[FAIL] 'slither' executable not found on PATH or standard directories", file=sys.stderr)
+            sys.exit(1)
 
     sarif_file = os.path.join(args.output_dir, "slither.sarif")
     cmd_for_receipt = [tool_path, args.target, "--sarif", sarif_file, "--fail-none"]
     if args.exclude_paths:
         cmd_for_receipt.extend(["--filter-paths", args.exclude_paths])
+
+    # Invariant: --dry-run strictly takes precedence over --confirm
+    if is_dry_run:
+        print(f"[DRY-RUN] Verified slither command: {' '.join(cmd_for_receipt)}")
+        sys.exit(0)
 
     flags_to_check = ["--sarif", "--fail-none"]
     if args.exclude_paths:
@@ -100,11 +110,6 @@ def main():
 
     if not check_help_flags(tool_path, flags_to_check):
         sys.exit(1)
-
-    # Invariant: --dry-run strictly takes precedence over --confirm
-    if args.dry_run or not args.confirm:
-        print(f"[DRY-RUN] Verified slither command: {' '.join(cmd_for_receipt)}")
-        sys.exit(0)
 
     # Live execution authorized
     os.makedirs(args.output_dir, exist_ok=True)

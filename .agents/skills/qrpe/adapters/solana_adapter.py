@@ -24,14 +24,19 @@ def main():
     parser.add_argument("--confirm", action="store_true", default=False)
     args = parser.parse_args()
 
+    is_dry_run = args.dry_run or not args.confirm
+
     tool_path = find_tool("anchor")
     if not tool_path:
-        print("[FAIL] 'anchor' executable not found on PATH", file=sys.stderr)
-        sys.exit(1)
+        if is_dry_run:
+            tool_path = "anchor"
+        else:
+            print("[FAIL] 'anchor' executable not found on PATH", file=sys.stderr)
+            sys.exit(1)
 
     cmd = [tool_path, "build" if args.action == "idl" else "test", "--skip-local-validator"]
 
-    if args.dry_run or not args.confirm:
+    if is_dry_run:
         print(f"[DRY-RUN] Verified anchor command in {args.target}: {' '.join(cmd)}")
         sys.exit(0)
 

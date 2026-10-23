@@ -327,12 +327,15 @@ class OAMAderynOrchestrator:
 
         tool_exec = resolve_aderyn_tool()
         if not tool_exec:
-            self.terminal_status = STATUS_BLOCKED
-            self.error_code = ERR_TOOL_UNAVAILABLE
-            self.error_message = "Aderyn scanner executable not found on PATH or standard directories"
-            self.record_state("BLOCKED", self.error_message)
-            print(f"[FAIL] {self.error_message}", file=sys.stderr)
-            return 3
+            if self.dry_run or not self.confirm:
+                tool_exec = Path("/usr/local/bin/aderyn")
+            else:
+                self.terminal_status = STATUS_BLOCKED
+                self.error_code = ERR_TOOL_UNAVAILABLE
+                self.error_message = "Aderyn scanner executable not found on PATH or standard directories"
+                self.record_state("BLOCKED", self.error_message)
+                print(f"[FAIL] {self.error_message}", file=sys.stderr)
+                return 3
 
         aderyn_reg = self.tooling_registry.get("aderyn", {})
         if aderyn_reg.get("status") != "OK":

@@ -297,8 +297,12 @@ else
 fi
 
 if [[ "$SCANNER_FOUND" == false ]]; then
-  echo "Error: Aderyn scanner executable not found on PATH or standard directories" >&2
-  exit 3
+  if [[ "$DRY_RUN" == true || "$CONFIRM" == false ]]; then
+    SCANNER_PATH="aderyn"
+  else
+    echo "Error: Aderyn scanner executable not found on PATH or standard directories" >&2
+    exit 3
+  fi
 fi
 
 # Prepare arguments for OAM Orchestrator

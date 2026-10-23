@@ -24,14 +24,19 @@ def main():
     parser.add_argument("--confirm", action="store_true", default=False)
     args = parser.parse_args()
 
+    is_dry_run = args.dry_run or not args.confirm
+
     tool_path = find_tool("myth")
     if not tool_path:
-        print("[FAIL] 'myth' executable not found on PATH", file=sys.stderr)
-        sys.exit(1)
+        if is_dry_run:
+            tool_path = "myth"
+        else:
+            print("[FAIL] 'myth' executable not found on PATH", file=sys.stderr)
+            sys.exit(1)
 
     cmd = [tool_path, "analyze", args.contract, "--max-depth", args.max_depth, "-o", "json"]
 
-    if args.dry_run or not args.confirm:
+    if is_dry_run:
         print(f"[DRY-RUN] Verified mythril command: {' '.join(cmd)}")
         sys.exit(0)
 

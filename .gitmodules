@@ -52,3 +52,6 @@
 [submodule "MagicSpend"]
 	path = bounties/base/MagicSpend
 	url = https://github.com/coinbase/MagicSpend.git
+[submodule "openzeppelin-contracts"]
+	path = openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts.git

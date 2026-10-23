@@ -64,3 +64,6 @@
 [submodule "agglayer-contracts"]
 	path = bounties/agglayer/agglayer-contracts
 	url = https://github.com/agglayer/agglayer-contracts.git
+[submodule "op-rbuilder"]
+	path = op-rbuilder
+	url = https://github.com/base/op-rbuilder.git

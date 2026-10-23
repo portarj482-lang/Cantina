@@ -323,18 +323,24 @@ class EchidnaGovernanceAdjudicator:
         )
 
     def evaluate_tool_compatibility_gate(
-        self, tool_path: Optional[str], version: Optional[str], missing_flags: list[str]
+        self,
+        tool_path: Optional[str],
+        version: Optional[str],
+        missing_flags: list[str],
+        dry_run: bool = False,
+        confirm: bool = False,
     ) -> GateDecisionContract:
         req = ["executable_resolved", "version_verified", "cli_flags_supported"]
         passed = []
         failed = []
 
-        if (tool_path and os.path.isfile(tool_path) and os.access(tool_path, os.X_OK)) or (self.dry_run or not self.confirm):
+        is_sim = dry_run or not confirm
+        if (tool_path and os.path.isfile(tool_path) and os.access(tool_path, os.X_OK)) or is_sim:
             passed.append("executable_resolved")
         else:
             failed.append("executable_resolved")
 
-        if (version and version != "unknown") or (self.dry_run or not self.confirm):
+        if (version and version != "unknown") or is_sim:
             passed.append("version_verified")
         else:
             failed.append("version_verified")
@@ -753,7 +759,9 @@ class EchidnaGlassboxOrchestrator:
             except Exception:
                 pass
 
-        gate_tool = self.adjudicator.evaluate_tool_compatibility_gate(tool_bin, echidna_ver, [])
+        gate_tool = self.adjudicator.evaluate_tool_compatibility_gate(
+            tool_bin, echidna_ver, [], dry_run=self.dry_run, confirm=self.confirm
+        )
         self.gate_decisions.append(gate_tool)
         if gate_tool.decision != "PASS":
             print(f"[FAIL] Tool compatibility gate failed: {gate_tool.rationale}", file=sys.stderr)

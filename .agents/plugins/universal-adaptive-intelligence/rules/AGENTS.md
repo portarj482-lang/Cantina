@@ -49,3 +49,12 @@
 - `--dry-run` must always override `--confirm`; zero filesystem writes are permitted during dry-run execution.
 - Artifact serialization to `bounties/<slug>/scans/normalized_sarif.json` must be atomic via temporary file swap and verified by read-back digest.
 - Existing valid artifacts must survive failed or interrupted publication runs completely intact.
+
+## 8. Dynamic Analysis & Test Execution Invariants (Pack C)
+- Workflow shell scripts must enforce `set -Eeuo pipefail` and `IFS=$'\n\t'`.
+- All CLI argument parsers must fail closed: unknown flags and missing option values must abort execution immediately with exit code 1 or 2.
+- `--dry-run` must always override `--confirm`. Confirmed execution requires explicit authorization and passes policy checks.
+- Path containment in wrappers must verify both the parent directory and the final path component against symlink escapes outside `REPO_ROOT`.
+- Python adapters must independently verify path containment using `Path.is_relative_to` or canonical resolution rather than blindly trusting shell wrappers.
+- All artifact serialization (receipts, manifests, findings) must be atomic via temporary file swap and `os.fsync`.
+- Process exit code 0 establishes only what tests passed under recorded conditions; it is not universal proof of security.

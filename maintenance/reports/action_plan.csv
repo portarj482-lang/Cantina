@@ -1,0 +1,39 @@
+path,size,action,owner,eta,commands
+bounties/base/spend-permissions,1.44 GB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/base/spend-permissions
+onchainsummer.xyz,808.07 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm onchainsummer.xyz
+bounties/base/eip-7702-proxy,488.06 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/base/eip-7702-proxy
+bounties/base/smart-wallet,472.86 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/base/smart-wallet
+docs,472.32 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm docs
+bounties/base/docs,455.06 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/base/docs
+bounties/agglayer/ulxly-contracts,440.79 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/agglayer/ulxly-contracts
+bounties/Revert v4lend Competition/lib/uniswap-hooks,353.00 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/Revert v4lend Competition/lib/uniswap-hooks
+bounties/liquity/bold,272.39 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/liquity/bold
+ai-cookbook,207.22 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm ai-cookbook
+bounties/base/contracts,181.71 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/base/contracts
+foundry,126.27 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm foundry
+bounties/base/foundry,100.06 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/base/foundry
+bounties/base/base-std,95.20 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/base/base-std
+bounties/liquity/v2-gov,82.63 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/liquity/v2-gov
+bounties/base/base,75.38 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/base/base
+base-anvil,71.96 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm base-anvil
+bounties/base/MagicSpend,67.79 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/base/MagicSpend
+openzeppelin-contracts,66.72 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm openzeppelin-contracts
+bounties/agglayer/vault-bridge,40.87 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/agglayer/vault-bridge
+base-mcp-legacy,36.33 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm base-mcp-legacy
+bounties/agglayer/agglayer-contracts,18.24 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/agglayer/agglayer-contracts
+op-rbuilder,6.59 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm op-rbuilder
+bounties/base/skills,2.25 MB,Absorb,Monorepo Maintainer,30m,./scripts/absorb-nested.sh --confirm bounties/base/skills
+bounties/pump-fun/pump-public-docs,2.22 MB,Absorb,Monorepo Maintainer,30m,./scripts/absorb-nested.sh --confirm bounties/pump-fun/pump-public-docs
+base-account-privy,1.75 MB,Absorb,Monorepo Maintainer,30m,./scripts/absorb-nested.sh --confirm base-account-privy
+bounties/Revert v4lend Competition/lib/forge-std,1.36 MB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/Revert v4lend Competition/lib/forge-std
+bounties/Revert v4lend Competition/lib/hookmate,432.23 KB,Submodule,DevOps Lead,2h,./scripts/convert-to-submodule.sh --confirm bounties/Revert v4lend Competition/lib/hookmate
+contract-address-checker,222.59 KB,Absorb,Monorepo Maintainer,30m,./scripts/absorb-nested.sh --confirm contract-address-checker
+base-snapshots-dashboard,196.11 KB,Absorb,Monorepo Maintainer,30m,./scripts/absorb-nested.sh --confirm base-snapshots-dashboard
+transaction-latency,109.02 KB,Absorb,Monorepo Maintainer,30m,./scripts/absorb-nested.sh --confirm transaction-latency
+bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-4d410413-516f-4a99-998c-2b794d9e4857.png,8.42 MB,archive_or_track,Security Auditor,1h,"git add ""bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-4d410413-516f-4a99-998c-2b794d9e4857.png"""
+bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/hardhat/artifacts/build-info/1d5bf6c85110ac2c81af05c7fccc7c48.json,5.65 MB,remove_and_ignore,Build Engineer,15m,"rm -rf ""bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/hardhat/artifacts/build-info/1d5bf6c85110ac2c81af05c7fccc7c48.json"""
+bounties/base-h1-prep/evidence/coinbase-ethics-bounty-2022.png,4.24 MB,archive_or_track,Security Auditor,1h,"git add ""bounties/base-h1-prep/evidence/coinbase-ethics-bounty-2022.png"""
+bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-ad409831-9553-4dd5-9570-9b9bf70f4b1a.png,3.54 MB,archive_or_track,Security Auditor,1h,"git add ""bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-ad409831-9553-4dd5-9570-9b9bf70f4b1a.png"""
+html/inlineAssembly.jpeg,2.64 MB,archive_or_track,Security Auditor,1h,"git add ""html/inlineAssembly.jpeg"""
+bounties/base-h1-prep/evidence/hackerone-scope-ui/third-party-whitehatsnepal-coinbase-scope.png,2.49 MB,archive_or_track,Security Auditor,1h,"git add ""bounties/base-h1-prep/evidence/hackerone-scope-ui/third-party-whitehatsnepal-coinbase-scope.png"""
+bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-dcb846dc-8ead-452e-8a30-0f6ec8c55d4d.png,2.23 MB,archive_or_track,Security Auditor,1h,"git add ""bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-dcb846dc-8ead-452e-8a30-0f6ec8c55d4d.png"""

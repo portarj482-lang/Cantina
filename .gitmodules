@@ -34,3 +34,6 @@
 [submodule "foundry"]
 	path = foundry
 	url = https://github.com/foundry-rs/foundry.git
+[submodule "bounties_base_foundry"]
+	path = bounties/base/foundry
+	url = https://github.com/base/foundry.git

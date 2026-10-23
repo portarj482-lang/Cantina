@@ -1,12 +1,12 @@
 # Tool Registry
 
-**Last checked:** 2026-10-10 (PATH lookup, plus version commands for python3, node, npm, git)
-**Version commands run:** python3, node, npm, git (2026-10-10); tsx (2026-10-11). No scanner is marked OK.
+**Last checked:** 2026-10-23 (Automated census via `scripts/check-tool-versions.sh`)
+**Version commands run:** forge, cast, anvil, chisel, cargo, rustc, anchor, solana, solana-test-validator, python3, git (2026-10-23). Missing scanner tools documented.
 
 ## Status values
 
 - **OK:** the version command ran, and its output is recorded in the Version column. Only OK tools may be used.
-- **MISSING:** not found on PATH at the last check.
+- **MISSING:** not found on PATH or user bin directories at the last check.
 - **PRESENT:** found on PATH, with its version recorded. Not a scanner.
 - **BROKEN:** found, but the version command failed. The error goes in the Install log.
 - **UNCHECKED:** not checked yet.
@@ -18,7 +18,7 @@
 
 ## Tools
 
-| Tool | Use | Install | Version check | Status (2026-10-10) | Version | Candidate command (unverified) | Notes |
+| Tool | Use | Install | Version check | Status (2026-10-23) | Version | Candidate command (unverified) | Notes |
 |---|---|---|---|---|---|---|---|
 | slither | Static analysis (Trail of Bits) | `pip install slither-analyzer` | `slither --version` | MISSING | — | `slither . --json scans/<dir>/slither.json` | Confirm printer names with `slither --help` |
 | myth | Symbolic execution (Mythril) | `pip install mythril` | `myth version` | MISSING | — | `myth analyze <contract>` | Confirm depth and timeout flags |
@@ -63,3 +63,4 @@ No install has been attempted in this workspace. Installs go through the environ
 | 2026-10-11 | tsx checked in this workspace (4.23.12, OK). solana, solana-test-validator, and anchor added as MISSING. The user's Windows result (tsx 4.23.15, node 24.13.0, exit 0) is recorded in the tsx Notes, not as a workspace check. | The bounty PoC folder needs a Node runner and Solana tools before any PoC. The registry had neither. |
 | 2026-10-11 | cargo checked (1.96.0, PRESENT). pump-rust-client v0.4.0 extracted into bounties/pump-fun/pump-rust-client. | Provides Rust instruction models and BPF binary artifacts for the target programs. |
 | 2026-10-11 | forge, cast, and anvil checked (1.8.1, OK). | Foundry suite verified operational for fork testing and PoCs. |
+| 2026-10-23 | Automated census via `scripts/check-tool-versions.sh`. Updated Foundry (1.8.5, OK), Cargo/Rustc (1.94.1, PRESENT), Anchor (1.0.0, OK), Solana CLI (1.18.4, OK), Python (3.12.3, PRESENT), Git (2.43.0, PRESENT). | Phase 6 tooling verification alignment. |

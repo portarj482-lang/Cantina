@@ -91,3 +91,13 @@ make test
 # Verify all 25 submodules are cleanly recorded
 git submodule status
 ```
+
+---
+
+## 4. Phase 6 Operating Manual Alignment & Tooling Verification
+- **INSTRUCTIONS.md**: Fixed missing references by implementing Subsections 7.2 (Automated scanner execution), 7.3 (Scanner triage protocol), 7.4 (Manual review checklist), and 7.5 (Dynamic property & invariant testing). Updated Section 7.1 with automated census results.
+- **scripts/check-tool-versions.sh**: Tooling version scanner covering all 26 tools referenced in manual.
+- **scripts/lock-scope.py**: Automated scope hash calculator and snapshot verifier.
+- **scripts/run-scanner.sh**: Safe scanner execution harness with dry-run protection.
+- **global/tooling.md**: Synchronized tool statuses and versions with automated census.
+- **maintenance/runbook-remediation.md**: Added operational procedures for scope and scanner automation.

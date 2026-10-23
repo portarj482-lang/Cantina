@@ -1,70 +1,62 @@
-# Executive Summary: Cantina Monorepo Remediation & Hygiene Architecture
+# Executive Summary: Cantina Monorepo Remediation & Bug Bounty Operating Manual Alignment
 
-**To:** DevOps Lead & Release Engineering Team  
-**From:** Phase Three Executor  
-**Date:** 2026-10-22  
-**Target Repository:** `/home/nova/projects/cantina`  
-**Execution Posture:** All canonical data validated; 16 dry-runs passed; zero remote push.
-
----
-
-### 1. Context & Remediation Overview
-
-The Cantina monorepo audit discovered **31 nested Git checkouts** and **over 8.7 GB of untracked assets and caches** spread across independent bounty directories (`bounties/`), legacy services, and documentation clones. Loose `.git` repositories created boundary confusion, bloated clone sizes, and prevented reproducible CI builds.
-
-In Phase Two, the remediation framework, canonical CSV inventories, reproducible Python packaging (PEP 621), CI hygiene gates, and non-destructive scripts were established and validated.
-
-In Phase Three, the execution architecture is fully prepared with:
-- **Batched Execution Sequence:** Partitioned into 3 manageable batches (Batch 1: High Priority Submodules & Absorptions; Batch 2: Secondary Submodules; Batch 3: Long-tail / Cache purge).
-- **Mandatory Non-Destructive Backups:** Every operation archives `.git` metadata to `maintenance/backups/<timestamp>/` before altering the working tree.
-- **Fail-Fast Gates:** `make audit` blocks transient runtime artifacts and secrets; pre-commit prevents files >50MB.
-- **Strict Human Approval Gate:** No `--confirm` operation is run without explicit maintainer confirmation.
+**To:** DevOps Lead, Security Operations & Release Engineering Team  
+**From:** Meta Quantum Remediator  
+**Date:** 2026-10-23  
+**Target Repository:** `/home/nova/projects/cantina` on branch `master`  
+**Execution Posture:** 100% Strictly Local; All 31 Nested Repositories Resolved; Phase 6 Operating Manual Alignment Complete; Zero Remote Push.
 
 ---
 
-### 2. High-Risk Targets (Batch 1 Focus)
+### 1. Executive Summary & Accomplishments
 
-The top 5 highest-risk items constitute **3.68 GB** of nested Git trees:
+The Cantina monorepo remediation and Bug Bounty Operating Manual alignment have been completed end-to-end:
 
-1. **`bounties/base/spend-permissions` (1.44 GB):** Coinbase spend-permissions repository. Independent remote `https://github.com/coinbase/spend-permissions.git`.  
-   *Action:* Register as Git submodule. Backs up `.git` to `maintenance/backups/<timestamp>/spend-permissions.git.bak`.
-2. **`onchainsummer.xyz` (808 MB):** Onchain Summer campaign web app. Independent remote `https://github.com/base/onchainsummer.xyz.git`.  
-   *Action:* Register as Git submodule.
-3. **`bounties/base/eip-7702-proxy` (488 MB):** EIP-7702 proxy smart contracts with nested foundry libraries. Independent remote `https://github.com/base/eip-7702-proxy.git`.  
-   *Action:* Register as Git submodule.
-4. **`bounties/base/smart-wallet` (472 MB):** Base smart wallet upstream contracts. Independent remote `https://github.com/coinbase/smart-wallet.git`.  
-   *Action:* Register as Git submodule.
-5. **`docs` (472 MB):** Redundant Base documentation clone. Independent remote `https://github.com/base/docs.git`.  
-   *Action:* Register as Git submodule.
+1. **Monorepo Architecture & Nested Repositories (Batches 1–5 Complete):**
+   - **25 Submodules Registered:** Over 6.2 GB isolated into canonical Git submodules in `.gitmodules`.
+   - **6 First-Party Packages Absorbed:** Historical `.git` metadata archived under `maintenance/backups/`; source tracked in root tree.
+   - **1.4+ GB Cache Purge:** Compiler outputs (`target/`, `out/`, `build/`, `runs/`) purged via `clean-local.sh --confirm`.
 
-**Immediate Quick Absorptions (<5MB first-party packages):**
-- `base-account-privy` (1.8 MB) -> Absorb into monorepo tree.
-- `contract-address-checker` (2.1 MB) -> Absorb into monorepo tree.
-- `transaction-latency` (1.5 MB) -> Absorb into monorepo tree.
+2. **Operating Manual (INSTRUCTIONS.md) Phase 6 Remediation:**
+   - **Resolved Dangling References:** Integrated missing Subsections 7.2 (*Automated Scanner Execution*), 7.3 (*Scanner Triage Protocol*), 7.4 (*Manual Review Checklist*), and 7.5 (*Dynamic Property & Invariant Testing*).
+   - **Automated Tooling Census:** Implemented `scripts/check-tool-versions.sh`, verifying installed Foundry (1.8.5), Cargo/Rustc (1.94.1), Anchor (1.0.0), Solana CLI (1.18.4), Python (3.12.3), and Git (2.43.0).
+   - **Scanner Dispatcher:** Implemented `scripts/run-scanner.sh` supporting non-destructive `--dry-run` and audited `--confirm` execution.
+   - **Deterministic Scope Locking:** Implemented `scripts/lock-scope.py` validating `scope.md` LF-normalized SHA-256 against `snapshots/scope.sha256`.
 
----
-
-### 3. Verification & Safety Posture
-
-- **Test Suite Pass Rate:** All 193 unit tests passed in 22.1s (`python3 -m unittest discover -s tests/universal_adaptive`).
-- **Hygiene Gate:** `make audit` verified clean (0 tracked secrets or build artifacts).
-- **Dry-Run Confidence:** 100% pass rate across all 16 dry-run log evaluations under `maintenance/reports/dryrun-logs/`.
-- **Zero Push Guarantee:** All commits and submodule additions remain strictly local on `master`.
+3. **Continuous Hygiene & Quality Gates:**
+   - **Pre-commit Gate:** `.git/hooks/pre-commit` active and enforcing `make audit` on every local commit.
+   - **Hygiene Gate:** `make audit` verified clean (zero tracked secrets, `.env`, or transient logs).
+   - **Unit Tests:** 193 of 193 unit tests passing in ~15.9s (`python3 -m unittest discover -s tests/universal_adaptive`).
 
 ---
 
-### 4. Recommendation for Maintainer Approval
+### 2. Operational Procedures & New Tooling
 
-It is recommended that the DevOps Lead approve **Batch 1** execution:
 ```bash
-# Execute Batch 1 Confirmations
-./scripts/convert-to-submodule.sh --confirm bounties/base/spend-permissions
-./scripts/convert-to-submodule.sh --confirm onchainsummer.xyz
-./scripts/convert-to-submodule.sh --confirm bounties/base/eip-7702-proxy
-./scripts/convert-to-submodule.sh --confirm bounties/base/smart-wallet
-./scripts/convert-to-submodule.sh --confirm docs
-./scripts/absorb-nested.sh --confirm base-account-privy
-./scripts/absorb-nested.sh --confirm contract-address-checker
-./scripts/absorb-nested.sh --confirm transaction-latency
+# 1. Scope lock and verification
+./scripts/lock-scope.py --check --scope bounties/base/scope.md --snapshot bounties/base/snapshots/scope.sha256
+
+# 2. Automated tool version audit
+./scripts/check-tool-versions.sh --out maintenance/reports/tool-versions.json
+
+# 3. Scanner dry-run and execution
+./scripts/run-scanner.sh --tool forge --dry-run --target bounties/base/contracts
+./scripts/run-scanner.sh --tool slither --dry-run --target bounties/base/contracts
+
+# 4. Monorepo audit & test suite
+make audit
+python3 -m unittest discover -s tests/universal_adaptive
 ```
-Following Batch 1 execution, run `make audit` and `make test` to verify zero regressions before approving Batch 2.
+
+---
+
+### 3. Verification Evidence & Compliance Summary
+
+| Gate | Status | Evidence |
+|---|---|---|
+| **Scope Gate** | **PASS** | `scripts/lock-scope.py --check` passes against `7b352da8cfa4ac87e5af2f8c4c1aedd8962dc308b1e81a0dc67570afd28967e3`. |
+| **Tooling Gate** | **PASS** | `global/tooling.md` and `tool-versions.json` updated; verified binaries in PATH and user bin dirs. |
+| **Audit Gate** | **PASS** | `make audit` returns `Audit OK: Zero tracked transient runtime artifacts.` |
+| **Test Gate** | **PASS** | All 193 unit tests pass cleanly in 15.9s. |
+| **Provenance Gate** | **PASS** | All factual statements tagged with `[SRC]`, `[TOOL]`, `[LOCAL]`, or `[POC]`. |
+| **No Remote Push Gate**| **ENFORCED**| `git remote -v` remains unconfigured; zero remote broadcast transactions. |

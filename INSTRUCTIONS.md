@@ -225,24 +225,91 @@ The scanner table below is primarily for EVM/Solidity projects. It does not prov
 
 ### 7.1 Tool table and status
 
-A status is the result of a version check, not an assumption. Last check: **2026-10-10**, in the working environment.
+A status is the result of a version check, not an assumption. Last checked: **2026-10-23**, via `scripts/check-tool-versions.sh` with PATH expanded to include `$HOME/.foundry/bin`, `$HOME/.cargo/bin`, and `$HOME/.local/bin`.
 
-| Tool | Type | Use it for | Install | Check | Status (2026-10-10) |
-|---|---|---|---|---|---|
-| Slither | Static analysis (Trail of Bits) | Detectors, call graphs, inheritance, printers | `pip install slither-analyzer` | `slither --version` | MISSING |
-| Mythril | Symbolic execution | Searching for reachable bad states | `pip install mythril` | `myth version` | MISSING |
-| Echidna | Property fuzzer (Trail of Bits) | Fuzzing invariants you write | GitHub releases, crytic/echidna | `echidna --version` | MISSING |
-| Medusa | Parallel fuzzer (Trail of Bits) | Fuzzing with Foundry-style tests | GitHub releases, crytic/medusa | `medusa --version` | MISSING |
-| Foundry (forge, cast, anvil, chisel) | EVM test framework, fork node, and chain tools | EVM unit, fork, fuzz, and invariant tests; PoCs | `curl -L https://foundry.paradigm.xyz \| bash`, then `foundryup` | `forge --version` | MISSING |
-| Halmos | Symbolic testing for Foundry tests | Checking properties over symbolic inputs | `pip install halmos` | `halmos --version` | MISSING |
-| Aderyn | Static analysis (Cyfrin) | Fast detector pass | `cargo install aderyn` | `aderyn --version` | MISSING |
-| Semgrep | Pattern matching | Custom Solidity rules | `pip install semgrep` | `semgrep --version` | MISSING |
-| Solhint | Linter | Style and common-mistake rules | `npm install -g solhint` | `solhint --version` | MISSING |
-| solc | Compiler | Matching the project's compiler version | `pip install solc-select`, then `solc-select install <ver>` | `solc --version` | MISSING |
-| Certora Prover | Formal verification (commercial) | Rule-based proofs; needs a license | `pip install certora-cli` | `certoraRun --version` | MISSING |
-| Kontrol | Formal verification (Runtime Verification) | Proofs over Foundry tests; advanced | Runtime Verification's install guide | `kontrol --version` | MISSING |
-| Heimdall-rs | Bytecode decompiler | Unverified contracts: recovering ABI and logic | heimdall-rs install docs | `heimdall --version` | MISSING |
-| cast and block explorers | Chain queries | Reading state, storage slots, verified source | Included with Foundry | `cast --version` | MISSING |
+| Tool | Type | Use it for | Install | Check | Status (2026-10-23) | Version |
+|---|---|---|---|---|---|---|
+| Foundry (forge, cast, anvil, chisel) | EVM test framework, fork node, chain tools | EVM unit, fork, fuzz, invariant tests; PoCs | `curl -L https://foundry.paradigm.xyz \| bash && foundryup` | `forge --version` | OK | 1.8.5 |
+| cast and block explorers | Chain queries | Reading state, storage slots, verified source | Included with Foundry | `cast --version` | OK | 1.8.5 |
+| anvil | Local fork node | Fork testing against pinned blocks | Included with Foundry | `anvil --version` | OK | 1.8.5 |
+| chisel | Solidity REPL | Interactive Solidity snippet testing | Included with Foundry | `chisel --version` | OK | 1.8.5 |
+| cargo / rustc | Rust compiler & package manager | Building Rust clients and Solana BPF programs | System / rustup install | `cargo --version` | PRESENT | 1.94.1 |
+| Anchor CLI | Solana framework | Building and testing Anchor programs | `cargo install --git https://github.com/coral-xyz/anchor anchor-cli` | `anchor --version` | OK | 1.0.0 |
+| Solana CLI (solana, validator) | Solana test validator & chain tools | Local cluster execution and account dumping | Solana install script | `solana --version` | OK | 1.18.4 |
+| python3 | Runtime | Test harnesses, engine and scope validation | System install | `python3 --version` | PRESENT | 3.12.3 |
+| git | Source control | Commit verification and archive extraction | System install | `git --version` | PRESENT | 2.43.0 |
+| Slither | Static analysis (Trail of Bits) | Detectors, call graphs, inheritance, printers | `pip install slither-analyzer` | `slither --version` | MISSING | — |
+| Aderyn | Static analysis (Cyfrin) | Fast detector pass | `cargo install aderyn` | `aderyn --version` | MISSING | — |
+| Semgrep | Pattern matching | Custom Solidity rules | `pip install semgrep` | `semgrep --version` | MISSING | — |
+| Mythril | Symbolic execution | Searching for reachable bad states | `pip install mythril` | `myth version` | MISSING | — |
+| Echidna | Property fuzzer (Trail of Bits) | Fuzzing invariants you write | GitHub releases, crytic/echidna | `echidna --version` | MISSING | — |
+| Medusa | Parallel fuzzer (Trail of Bits) | Fuzzing with Foundry-style tests | GitHub releases, crytic/medusa | `medusa --version` | MISSING | — |
+| Halmos | Symbolic testing for Foundry tests | Checking properties over symbolic inputs | `pip install halmos` | `halmos --version` | MISSING | — |
+| Solhint | Linter | Style and common-mistake rules | `npm install -g solhint` | `solhint --version` | MISSING | — |
+| solc | Compiler | Matching project compiler versions | `pip install solc-select && solc-select install <ver>` | `solc --version` | MISSING | — |
+| Certora Prover | Formal verification (commercial) | Rule-based proofs; needs a license | `pip install certora-cli` | `certoraRun --version` | MISSING | — |
+| Kontrol | Formal verification (Runtime Verification) | Proofs over Foundry tests | Runtime Verification install guide | `kontrol --version` | MISSING | — |
+| Heimdall-rs | Bytecode decompiler | Recovering ABI and logic from bytecode | heimdall-rs install docs | `heimdall --version` | MISSING | — |
+| node / npm | Runtime & package manager | Running JS/TS tools | System install | `node --version` | MISSING | — |
+| tsx | TypeScript runner | Executing TypeScript PoCs | `npm install -g tsx` | `tsx --version` | MISSING | — |
+
+### 7.2 Automated scanner execution
+
+Automated scanners are executed via `./scripts/run-scanner.sh` or directly with confirmed flags. All scanner commands default to `--dry-run` and must record raw execution logs to `scans/<date>-<tool>/`.
+
+- **Slither:** `./scripts/run-scanner.sh --tool slither --target <path> --out scans/<date>-slither/report.json`
+  - Visual printers: `slither <target> --print call-graph`, `slither <target> --print inheritance-graph`
+- **Aderyn:** `./scripts/run-scanner.sh --tool aderyn --target <path> --out scans/<date>-aderyn/report.md`
+- **Semgrep:** `./scripts/run-scanner.sh --tool semgrep --target <path> --out scans/<date>-semgrep/report.json`
+- **Foundry (Forge):** `./scripts/run-scanner.sh --tool forge --target <path> --out scans/<date>-forge/test.log`
+- **Anchor (Solana):** `./scripts/run-scanner.sh --tool anchor --target <path> --out scans/<date>-anchor/test.log`
+
+Never execute scanners against live mainnet endpoints. All execution runs against local source checkouts or local forks.
+
+### 7.3 Scanner triage protocol
+
+Raw scanner output is NEVER a finding on its own. Every alert must be triaged according to this protocol before promotion:
+
+1. **Intake & Archival:** Save raw tool output to `bounties/<slug>/scans/<date>-<tool>/` and tag claims with `[TOOL: scans/<date>-<tool>/<file>]`.
+2. **False Positive Filter:** Evaluate each finding against the contract source and business logic:
+   - Does the reported issue violate an intended protocol invariant or is it an accepted trade-off?
+   - Is the vulnerable code path guarded by access control, reentrancy locks, or internal visibility?
+   - If discarded as a false positive, document the refutation in `facts.md` or `scans/<date>-<tool>/triage.md` with explicit justification.
+3. **Lead Promotion:** If the alert represents a plausible, unmitigated attack vector:
+   - Create `findings/F-###.md` with initial status `Lead`.
+   - Record the candidate severity matching the exact scale in `scope.md`.
+   - Formulate a testable security hypothesis `H-###`.
+
+### 7.4 Manual review checklist
+
+For every in-scope entry point and contract, systematically walk through the following security domains:
+
+1. **Access Control & Authorization:**
+   - Are privileged functions guarded by `onlyOwner`, timelocks, or multi-signatures?
+   - Can initializers or upgrade proxies be front-run or called repeatedly?
+   - Are signature validations protected against cross-chain and nonce replays (EIP-712 / ERC-1271 / ERC-6492)?
+2. **Reentrancy & State Invariants:**
+   - Does all state mutation strictly follow Checks-Effects-Interactions (CEI)?
+   - Are external interactions vulnerable to read-only or cross-function reentrancy?
+3. **Arithmetic, Token & Accounting Invariants:**
+   - Are token transfer amounts validated for fee-on-transfer, rebasing, or non-standard returns?
+   - Can first-depositor share inflation grief vault pricing?
+   - Is token conservation maintained monotonically across deposit, mint, burn, and withdraw flows?
+4. **Oracle & Timestamp Dynamics:**
+   - Are price feeds checked for staleness, round completeness, and min/max circuit breaker bounds?
+   - Can block timestamps or sequencer downtime be manipulated to bypass maturity delays?
+5. **Bridge & Cross-Domain Messaging:**
+   - Are message relays validated to ensure sender aliasing cannot be spoofed?
+   - Can failed messages be retried without double-spending or replaying value transfers?
+
+### 7.5 Dynamic property & invariant testing
+
+Formulate invariants as executable Forge / Echidna test suites in `poc/` or `test/invariants/`:
+
+1. **Define the Invariant:** Express the protocol guarantee as a mathematical condition (e.g., `totalAssets() >= totalShares()`, `isSolvent == true`).
+2. **Implement Fuzz Harness:** Construct stateful test handlers constraining inputs to valid domain ranges while maximizing actor concurrency.
+3. **Execute & Record:** Run fuzz campaigns with high call depth (`forge test --match-path test/invariants/ -vvv`).
+4. **Triage Broken Invariants:** If an invariant reverts or assertion fails, isolate the minimal transaction sequence, record raw logs to `poc/` or `scans/`, and promote to an executable exploit PoC under Phase 4.
 
 ---
 

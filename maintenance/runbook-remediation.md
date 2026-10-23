@@ -144,3 +144,34 @@ mv "${LATEST_BACKUP}/${NAME}.git" "${TARGET}/.git"
 | Monorepo Absorption & Packaging | Monorepo Maintainer | Architecture Analyst |
 | Bounty Scopes & Evidence Verification | Security Auditor | Playbook Admin Oracle |
 | Local Tooling & Caches | Build Engineer | DevOps Lead |
+
+---
+
+## 7. Operating Manual Tooling & Scope Verification Procedures
+
+### A. Scope Verification & Hashing
+To lock and verify the LF-normalized scope snapshot:
+```bash
+# Verify scope hash matches stored snapshot
+./scripts/lock-scope.py --check --scope bounties/<slug>/scope.md --snapshot bounties/<slug>/snapshots/scope.sha256
+
+# Write recomputed scope hash to snapshot
+./scripts/lock-scope.py --write --scope bounties/<slug>/scope.md --snapshot bounties/<slug>/snapshots/scope.sha256
+```
+
+### B. Tooling Census & Version Verification
+To run an automated audit of all 26 tools referenced in Section 7.1:
+```bash
+# Output JSON report and print verification table
+./scripts/check-tool-versions.sh --out maintenance/reports/tool-versions.json
+```
+
+### C. Automated Scanner Dispatch
+To execute static and dynamic scanners with dry-run protection:
+```bash
+# Dry run verification (default)
+./scripts/run-scanner.sh --tool slither --dry-run --target bounties/<slug>/contracts
+
+# Confirmed execution saving raw output to scans/
+./scripts/run-scanner.sh --tool slither --confirm --target bounties/<slug>/contracts --out bounties/<slug>/scans/$(date +%Y-%m-%d)-slither.log
+```

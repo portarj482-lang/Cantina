@@ -22,3 +22,6 @@
 [submodule "uniswap-hooks"]
 	path = bounties/Revert v4lend Competition/lib/uniswap-hooks
 	url = https://github.com/openzeppelin/uniswap-hooks
+[submodule "bold"]
+	path = bounties/liquity/bold
+	url = https://github.com/liquity/bold.git

@@ -4,3 +4,6 @@
 [submodule "onchainsummer.xyz"]
 	path = onchainsummer.xyz
 	url = https://github.com/base/onchainsummer.xyz.git
+[submodule "eip-7702-proxy"]
+	path = bounties/base/eip-7702-proxy
+	url = https://github.com/base/eip-7702-proxy.git

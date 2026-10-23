@@ -1,0 +1,3 @@
+[submodule "spend-permissions"]
+	path = bounties/base/spend-permissions
+	url = https://github.com/coinbase/spend-permissions.git

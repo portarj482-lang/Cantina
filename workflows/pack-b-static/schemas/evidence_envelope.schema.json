@@ -1,0 +1,198 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OAM Standard Evidence Envelope Schema",
+  "description": "Schema governing Oracle Agentic Mesh (OAM) evidence envelopes for static analysis workflows.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "run_id",
+    "task_id",
+    "agent_id",
+    "operation",
+    "execution_mode",
+    "repository",
+    "authorization",
+    "process_execution",
+    "artifacts",
+    "validation_results",
+    "findings_summary",
+    "state_history",
+    "terminal_status"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0.0"]
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "agent_id": {
+      "type": "string"
+    },
+    "operation": {
+      "type": "string"
+    },
+    "execution_mode": {
+      "type": "string",
+      "enum": ["LIVE", "DRY_RUN"]
+    },
+    "repository": {
+      "type": "object",
+      "required": ["root", "target_path", "canonical_target"],
+      "properties": {
+        "root": { "type": "string" },
+        "revision": { "type": ["string", "null"] },
+        "target_path": { "type": "string" },
+        "canonical_target": { "type": "string" },
+        "output_boundary": { "type": "string" }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "required": ["policy_version", "confirmed", "dry_run", "write_allowed"],
+      "properties": {
+        "policy_version": { "type": "string" },
+        "confirmed": { "type": "boolean" },
+        "dry_run": { "type": "boolean" },
+        "write_allowed": { "type": "boolean" },
+        "approval_reference": { "type": ["string", "null"] }
+      }
+    },
+    "process_execution": {
+      "type": "object",
+      "required": ["tool", "command", "adapter_exit_code", "scanner_exit_code", "duration_seconds"],
+      "properties": {
+        "tool": { "type": "string" },
+        "tool_version": { "type": ["string", "null"] },
+        "command": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "adapter_exit_code": { "type": "integer" },
+        "scanner_exit_code": { "type": ["integer", "null"] },
+        "duration_seconds": { "type": "number" },
+        "start_time": { "type": "string" },
+        "end_time": { "type": "string" }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "path", "size_bytes", "sha256", "validation_status"],
+        "properties": {
+          "name": { "type": "string" },
+          "path": { "type": "string" },
+          "size_bytes": { "type": "integer" },
+          "sha256": { "type": "string" },
+          "validation_status": {
+            "type": "string",
+            "enum": ["VALID", "INVALID", "MISSING", "SKIPPED"]
+          }
+        }
+      }
+    },
+    "validation_results": {
+      "type": "object",
+      "required": [
+        "receipt_present",
+        "report_present",
+        "digest_verified",
+        "schema_conformant",
+        "attribution_verified",
+        "exit_code_consistent"
+      ],
+      "properties": {
+        "receipt_present": { "type": "boolean" },
+        "report_present": { "type": "boolean" },
+        "digest_verified": { "type": "boolean" },
+        "schema_conformant": { "type": "boolean" },
+        "attribution_verified": { "type": "boolean" },
+        "exit_code_consistent": { "type": "boolean" }
+      }
+    },
+    "findings_summary": {
+      "type": "object",
+      "required": ["total_findings", "critical", "high", "medium", "low", "informational"],
+      "properties": {
+        "total_findings": { "type": "integer", "minimum": 0 },
+        "critical": { "type": "integer", "minimum": 0 },
+        "high": { "type": "integer", "minimum": 0 },
+        "medium": { "type": "integer", "minimum": 0 },
+        "low": { "type": "integer", "minimum": 0 },
+        "informational": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "integrity_status": {
+      "type": "string",
+      "enum": ["VERIFIED", "UNVERIFIED", "SKIPPED"]
+    },
+    "triaged_findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["detector_name", "scanner_severity", "assessed_severity", "instances_count"],
+        "properties": {
+          "detector_name": { "type": "string" },
+          "title": { "type": "string" },
+          "scanner_severity": { "type": "string" },
+          "assessed_severity": { "type": "string" },
+          "instances_count": { "type": "integer" },
+          "sample_locations": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "state_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["state", "timestamp"],
+        "properties": {
+          "state": { "type": "string" },
+          "timestamp": { "type": "string" },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "terminal_status": {
+      "type": "string",
+      "enum": [
+        "PLANNED",
+        "BLOCKED",
+        "DRY_RUN_COMPLETE",
+        "RUNNING",
+        "EXECUTION_FAILED",
+        "EXECUTED_UNVALIDATED",
+        "VALIDATION_FAILED",
+        "COMPLETED_WITH_FINDINGS",
+        "COMPLETED_CLEAN",
+        "PARTIAL",
+        "CANCELLED"
+      ]
+    },
+    "error_code": {
+      "type": ["string", "null"],
+      "enum": [
+        null,
+        "INPUT_INVALID",
+        "AUTHORIZATION_DENIED",
+        "SCOPE_VIOLATION",
+        "PREFLIGHT_FAILED",
+        "TOOL_UNAVAILABLE",
+        "EXECUTION_FAILED",
+        "EXECUTION_TIMEOUT",
+        "ARTIFACT_INVALID",
+        "VALIDATION_FAILED",
+        "ATTRIBUTION_MISMATCH",
+        "POLICY_VIOLATION"
+      ]
+    }
+  }
+}

@@ -45,6 +45,13 @@ from universal_adaptive_engine.workflows.operations.rpc_governance_pipeline impo
     RPCChallengerWorkflow,
     RPCCleanupEvaluatorWorkflow,
 )
+from universal_adaptive_engine.workflows.operations.sarif_pipeline import (
+    SARIFCollectionPipeline,
+    SARIFCollectorAnalystWorkflow,
+    SARIFCollectorSecurityReviewerWorkflow,
+    SARIFCollectorVerifierWorkflow,
+    SARIFCollectorChallengerWorkflow,
+)
 
 OPERATIONS_REGISTRY = {
     "canonical": CanonicalAdaptivePipeline,
@@ -61,6 +68,10 @@ OPERATIONS_REGISTRY = {
     "rpc-governance": RPCGovernancePipeline,
     "rpc_governance": RPCGovernancePipeline,
     "rpc": RPCGovernancePipeline,
+    "sarif": SARIFCollectionPipeline,
+    "sarif-collector": SARIFCollectionPipeline,
+    "sarif_collector": SARIFCollectionPipeline,
+    "pack-b": SARIFCollectionPipeline,
 }
 
 

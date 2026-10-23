@@ -49,6 +49,7 @@
 | rpcinfo | Query registered RPC programs on local/remote hosts | Included with `rpcbind` apt package | `rpcinfo --version` | PRESENT | 1.2.6-7 | `rpcinfo -p <host>`, `rpcinfo -t <host> <prog> <ver>`, `rpcinfo -u <host> <prog> <ver>` | Port 111 queried on localhost, verified 2026-10-23 |
 | rpcclient | SMB/Windows MS-RPC client (Samba suite) | `sudo apt install -y smbclient` | `rpcclient --version` | PRESENT | 4.19.5-Ubuntu | `rpcclient -N -c "<cmd>" <host>`, `rpcclient -U user%pass -c "<cmd>" <host>` | Provided by smbclient on Ubuntu 24.04, verified 2026-10-23 |
 | ufw | Ubuntu Firewall — manages iptables rules | Pre-installed on Ubuntu | `ufw version` | PRESENT | 0.36.2 | `sudo ufw allow 111/tcp`, `sudo ufw allow 111/udp`, `sudo ufw allow 445/tcp`, `sudo ufw allow 139/tcp` | Verified on 2026-10-23 |
+| bash | Linux Shell environment runner for workflow wrappers | Pre-installed on Ubuntu | `bash --version` | PRESENT | 5.2.21 | `bash <script>.sh` | Found at /usr/bin/bash, verified 2026-10-23 |
 
 ## Install log
 

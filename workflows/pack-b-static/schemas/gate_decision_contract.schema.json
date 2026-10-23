@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GateDecisionContract",
+  "description": "Governs mandatory policy, preflight, validation, challenger, and admission gate decisions.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "gate_id",
+    "gate_name",
+    "required_checks",
+    "passed_checks",
+    "failed_checks",
+    "decision",
+    "rationale",
+    "proposer",
+    "evaluator",
+    "audit_reference",
+    "timestamp"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0", "1.0.0"]
+    },
+    "gate_id": {
+      "type": "string"
+    },
+    "gate_name": {
+      "type": "string"
+    },
+    "required_checks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "passed_checks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "failed_checks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "ACCEPTED",
+        "ACCEPTED_WITH_LIMITATIONS",
+        "REJECTED",
+        "QUARANTINED",
+        "BLOCKED"
+      ]
+    },
+    "rationale": {
+      "type": "string"
+    },
+    "proposer": {
+      "type": "string"
+    },
+    "evaluator": {
+      "type": "string"
+    },
+    "audit_reference": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    }
+  }
+}

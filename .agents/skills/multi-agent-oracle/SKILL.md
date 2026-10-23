@@ -3,8 +3,8 @@ name: multi-agent-oracle
 description: >-
   Orchestrates the complete 3-Tier Multi-Agent Oracle Architecture for autonomous,
   deterministic security auditing, invariant falsification, and live execution.
-  Coordinates Governance Oracles (G1 Global, G2 Playbook, G3 RPC), Domain Invariant
-  Oracles (G4 Dispute, G5 DelayedWETH, G6 Multiproof TEE, G7 B20 Precompile/Supply),
+  Coordinates Governance Oracles (G1 Global, G2 Playbook, G3 RPC, G7 Findings Normalization),
+  Domain Invariant Oracles (G4 Dispute, G5 DelayedWETH, G6 Multiproof TEE),
   Target Sub-Oracles, and Sub-Surface Attestation Agents. Features automated test
   execution harnesses (Forge & Cargo), differential test runners, and proof-of-concept
   verification pipelines.
@@ -21,19 +21,14 @@ graph TD
     User([User / Lead Orchestrator]) --> G1[G1: Global Admin Oracle]
     G1 --> G2[G2: Playbook Admin Oracle]
     G1 --> G3[G3: RPC Admin Oracle]
+    G1 --> G7[G7: Findings Normalization Oracle]
     
     G2 --> G4[G4: Fault Dispute Invariant Oracle]
     G2 --> G5[G5: DelayedWETH Invariant Oracle]
     G2 --> G6[G6: Multiproof TEE Invariant Oracle]
-    G2 --> G7[G7: B20 Native Precompile & Supply Oracle]
     
-    G7 --> SO1[Target Sub-Oracle #1: B20 Mint/Burn Supply Agent]
-    G7 --> SO2[Target Sub-Oracle #2: B20 Transfer Policy & Multiplier Agent]
-    
-    SO1 --> SA1[Sub-Surface Attestation: Rolling Limit Attestor]
-    SO1 --> SA2[Sub-Surface Attestation: Factory Identity Nonce Attestor]
-    SO2 --> SA3[Sub-Surface Attestation: Precompile Memory Offset Attestor]
-    SO2 --> SA4[Sub-Surface Attestation: Oracle Multiplier Feed Attestor]
+    G7 --> SO1[Pack E Normalization & Registry Governance]
+    G7 --> SO2[Pack E Vulnerability Triage & Overlap Analysis]
 ```
 
 ---
@@ -44,12 +39,12 @@ graph TD
 * **G1: Global Admin Oracle (`global-admin-oracle`)**: Authoritative owner of `global/` knowledge bases, tooling registries (`global/tooling.md`), verified patterns (`global/patterns.md`), and cross-bounty lessons.
 * **G2: Playbook Admin Oracle (`playbook-admin-oracle`)**: Authoritative owner of operational playbooks in `global/playbooks/` and orchestration workflows.
 * **G3: RPC Admin Oracle (`rpc-admin-oracle`)**: Executes system-level RPC audits, socket probing, network isolation, and fork node state configurations.
+* **G7: Findings Normalization Oracle (`findings-normalization-oracle`)**: Transforms supported security findings into consistent, machine-readable artifacts (`findings_normalized.json`) adhering to tool registry capability governance, evidence preservation, and explicit confirmation.
 
 ### Tier 2: Domain Invariant Oracles
 * **G4: Fault Dispute Invariant Oracle (`dispute-invariant-oracle`)**: Verifies state transition game resolutions, l2Sender reentrancy, and subgame DAG validity.
 * **G5: DelayedWETH Invariant Oracle (`delayed-weth-invariant-oracle`)**: Verifies WETH balance solvency, sub-account address space partitioning, and timelock monotonicity.
 * **G6: Multiproof TEE Invariant Oracle (`multiproof-tee-invariant-oracle`)**: Audits AWS Nitro hardware attestation, PCR validation, P-384 inverse-hint transcripts, and signer lifecycle.
-* **G7: B20 Native Precompile & Supply Oracle (`b20-supply-oracle`)**: Verifies Base native B20 Rust precompiles, rolling mint rate limits in `TokenSupplyManager`, deterministic address hashing in `B20AssetFactory`, and price multiplier safety in `OracleRegistry`.
 
 ### Tier 3: Target Sub-Oracles & Sub-Surface Attestation Agents
 Specialized execution agents that formulate exact boundary condition hypotheses and run localized fuzzing or invariant checks.

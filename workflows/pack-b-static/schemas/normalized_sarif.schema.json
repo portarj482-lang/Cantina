@@ -1,0 +1,207 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UOOMA Pack B Normalized SARIF Artifact Schema",
+  "description": "Schema definition for bounties/<slug>/scans/normalized_sarif.json produced by Pack B SARIF Collector under UOOMA UAIA v1.0.0",
+  "type": "object",
+  "required": [
+    "slug",
+    "status",
+    "timestamp",
+    "workflow_profile",
+    "policy_governance",
+    "provenance",
+    "summary",
+    "deduplication_policy",
+    "runs",
+    "verification_records"
+  ],
+  "properties": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PLANNED",
+        "DRY_RUN",
+        "COLLECTED",
+        "EMPTY",
+        "PARTIAL",
+        "FAILED",
+        "CANCELLED"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "workflow_profile": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "policy_governance": {
+      "type": "object",
+      "required": ["empty_allowed", "dry_run", "write_allowed", "oracle_decision"],
+      "properties": {
+        "empty_allowed": { "type": "boolean" },
+        "dry_run": { "type": "boolean" },
+        "write_allowed": { "type": "boolean" },
+        "oracle_decision": { "type": "string" }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["scanned_directory", "input_files", "rejected_inputs", "tool_versions"],
+      "properties": {
+        "scanned_directory": { "type": "string" },
+        "input_files": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "rejected_inputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["file", "reason"],
+            "properties": {
+              "file": { "type": "string" },
+              "reason": { "type": "string" },
+              "sha256": { "type": "string" }
+            }
+          }
+        },
+        "tool_versions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "version": { "type": "string" },
+              "status": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "total_inputs",
+        "accepted_inputs",
+        "rejected_inputs",
+        "total_raw_findings",
+        "deduplicated_findings",
+        "tool_breakdown"
+      ],
+      "properties": {
+        "total_inputs": { "type": "integer", "minimum": 0 },
+        "accepted_inputs": { "type": "integer", "minimum": 0 },
+        "rejected_inputs": { "type": "integer", "minimum": 0 },
+        "total_raw_findings": { "type": "integer", "minimum": 0 },
+        "deduplicated_findings": { "type": "integer", "minimum": 0 },
+        "tool_breakdown": {
+          "type": "object",
+          "additionalProperties": { "type": "integer" }
+        }
+      }
+    },
+    "deduplication_policy": {
+      "type": "object",
+      "required": ["policy_name", "version", "key_fields"],
+      "properties": {
+        "policy_name": { "type": "string" },
+        "version": { "type": "string" },
+        "key_fields": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tool", "results"],
+        "properties": {
+          "tool": {
+            "type": "object",
+            "required": ["driver"],
+            "properties": {
+              "driver": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "version": { "type": "string" },
+                  "rules": { "type": "array" }
+                }
+              }
+            }
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["ruleId", "message", "locations"],
+              "properties": {
+                "ruleId": { "type": "string" },
+                "level": { "type": "string" },
+                "message": {
+                  "type": "object",
+                  "required": ["text"],
+                  "properties": {
+                    "text": { "type": "string" }
+                  }
+                },
+                "locations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "physicalLocation": {
+                        "type": "object",
+                        "properties": {
+                          "artifactLocation": {
+                            "type": "object",
+                            "properties": {
+                              "uri": { "type": "string" }
+                            }
+                          },
+                          "region": {
+                            "type": "object",
+                            "properties": {
+                              "startLine": { "type": "integer" },
+                              "endLine": { "type": "integer" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "fingerprints": {
+                  "type": "object",
+                  "additionalProperties": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "verification_records": {
+      "type": "object",
+      "required": ["falsification_checks", "readback_verified"],
+      "properties": {
+        "falsification_checks": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "artifact_sha256": { "type": "string" },
+        "readback_verified": { "type": "boolean" }
+      }
+    }
+  }
+}

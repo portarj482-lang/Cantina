@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ToolContract",
+  "description": "Governs tool identity, version, input/output schemas, effects, and restrictions.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "tool_id",
+    "name",
+    "version",
+    "description",
+    "capabilities",
+    "effects",
+    "restrictions",
+    "verification_status"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0", "1.0.0"]
+    },
+    "tool_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "input_schema": {
+      "type": "object"
+    },
+    "output_schema": {
+      "type": "object"
+    },
+    "capabilities": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "effects": {
+      "type": "object",
+      "required": ["writes_filesystem", "network_access", "subprocesses", "idempotent"],
+      "properties": {
+        "writes_filesystem": { "type": "boolean" },
+        "network_access": { "type": "boolean" },
+        "subprocesses": { "type": "boolean" },
+        "idempotent": { "type": "boolean" }
+      }
+    },
+    "restrictions": {
+      "type": "object",
+      "required": ["timeout_seconds"],
+      "properties": {
+        "timeout_seconds": { "type": "integer", "minimum": 1 },
+        "sandbox_level": {
+          "type": "string",
+          "enum": ["NONE", "RESTRICTED_FS", "CONTAINED_WORKSPACE", "STRICT_ISOLATED"]
+        },
+        "max_output_bytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN",
+        "ASSUMED",
+        "AVAILABLE",
+        "VERIFIED",
+        "PARTIAL",
+        "BLOCKED",
+        "FAILED",
+        "DEPRECATED"
+      ]
+    }
+  }
+}

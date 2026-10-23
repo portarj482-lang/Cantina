@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TaskContract",
+  "description": "Governs task scope, prerequisites, permissions, budget, and acceptance criteria.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "task_id",
+    "objective",
+    "target_scope",
+    "prerequisites",
+    "permissions",
+    "budget",
+    "acceptance_criteria",
+    "status"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0", "1.0.0"]
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "objective": {
+      "type": "string"
+    },
+    "target_scope": {
+      "type": "object",
+      "required": ["slug", "repository_root", "target_path", "output_dir"],
+      "properties": {
+        "slug": { "type": "string" },
+        "repository_root": { "type": "string" },
+        "target_path": { "type": "string" },
+        "output_dir": { "type": "string" },
+        "canonical_target": { "type": "string" }
+      }
+    },
+    "prerequisites": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "permissions": {
+      "type": "object",
+      "required": ["execution_mode", "write_allowed"],
+      "properties": {
+        "execution_mode": {
+          "type": "string",
+          "enum": ["LIVE", "DRY_RUN"]
+        },
+        "write_allowed": { "type": "boolean" },
+        "allow_network": { "type": "boolean" },
+        "allow_subprocesses": { "type": "boolean" }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "required": ["timeout_seconds"],
+      "properties": {
+        "timeout_seconds": { "type": "integer", "minimum": 1 },
+        "max_memory_mb": { "type": "integer", "minimum": 1 },
+        "max_iterations": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PROPOSED",
+        "READY",
+        "RUNNING",
+        "VERIFYING",
+        "COMPLETED_VERIFIED",
+        "COMPLETED_WITH_FINDINGS",
+        "COMPLETED_CLEAN",
+        "DRY_RUN_COMPLETE",
+        "BLOCKED",
+        "FAILED",
+        "CANCELLED",
+        "COMPLETED_WITH_LIMITATIONS"
+      ]
+    }
+  }
+}

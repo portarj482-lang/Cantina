@@ -138,6 +138,10 @@ class ReasoningRequest:
         if model_override:
             self.context_metadata["model_override"] = model_override
 
+    @property
+    def model_override(self) -> Optional[str]:
+        return self.context_metadata.get("model_override")
+
     def validate(self) -> None:
         if not self.instructions or not self.instructions.strip():
             raise ValueError("ReasoningRequest instructions must not be empty")

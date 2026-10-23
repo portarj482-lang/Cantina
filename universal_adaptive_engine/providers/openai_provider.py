@@ -185,6 +185,27 @@ class OpenAIReasoningProvider:
         target_schema = schema if schema is not None else (request.output_schema if request.output_schema is not None else {})
         return self._execute_reasoning(request, structured_schema=target_schema)
 
+    def cancel_response(self, response_id: str) -> tuple[bool, dict[str, Any]]:
+        """Cancel an ongoing response using POST /v1/responses/{response_id}/cancel."""
+        if not response_id or not response_id.strip():
+            return False, {"error": "Invalid response_id"}
+        base = self.config.base_url.rstrip("/")
+        cancel_url = f"{base}/responses/{response_id.strip()}/cancel" if base.endswith("/v1") else f"{base}/v1/responses/{response_id.strip()}/cancel"
+        headers = {
+            "Authorization": f"Bearer {self.config.api_key}",
+            "Content-Type": "application/json",
+            "User-Agent": "USAP-UniversalAdaptiveEngine/1.2.0",
+        }
+        status_code, data, _ = self.gateway.dispatch_request(
+            method="POST",
+            url=cancel_url,
+            headers=headers,
+            payload=None,
+            timeout=min(self.config.timeout_seconds, 10.0),
+            caller_component=self.gateway.GATEWAY_COMPONENT_NAME,
+        )
+        return status_code == 200, data
+
     def _execute_reasoning(
         self,
         request: ReasoningRequest,
@@ -338,19 +359,30 @@ class OpenAIReasoningProvider:
         user_content = "\n\n".join(user_parts) if user_parts else "Analyze the task based on the system instructions."
         messages.append({"role": "user", "content": user_content})
 
+        effective_model = request.model_override or self.config.model
         payload: dict[str, Any] = {
-            "model": self.config.model,
-            "messages": messages,
+            "model": effective_model,
         }
+        if self.config.api_mode == "responses":
+            payload["instructions"] = system_content
+            payload["input"] = [{"role": "user", "content": user_content}]
+        else:
+            payload["messages"] = messages
 
         # Apply reasoning effort only if supported
-        is_reasoning = any(self.config.model.startswith(m) for m in REASONING_MODELS)
+        is_reasoning = any(effective_model.startswith(m) for m in REASONING_MODELS)
         if is_reasoning and self.config.reasoning_effort:
-            payload["reasoning_effort"] = self.config.reasoning_effort
+            if self.config.api_mode == "responses":
+                payload["reasoning"] = {"effort": self.config.reasoning_effort}
+            else:
+                payload["reasoning_effort"] = self.config.reasoning_effort
 
         # Output tokens limit
         if self.config.max_output_tokens:
-            payload["max_completion_tokens"] = self.config.max_output_tokens
+            if self.config.api_mode == "responses":
+                payload["max_output_tokens"] = self.config.max_output_tokens
+            else:
+                payload["max_completion_tokens"] = self.config.max_output_tokens
 
         # Store response policy
         payload["store"] = self.config.store_responses
@@ -383,6 +415,18 @@ class OpenAIReasoningProvider:
         msg = {}
         finish_reason = "stop"
 
+        # Check error object from Responses API
+        if "error" in data and isinstance(data["error"], dict) and data["error"].get("message"):
+            err_msg = data["error"]["message"]
+            return self._handle_failure(
+                request=request,
+                request_id=request_id,
+                status=ReasoningStatus.FAILED,
+                error_msg=f"OpenAI error: {err_msg}",
+                latency_ms=latency_ms,
+            )
+
+        reasoning_summary = ""
         if "output_text" in data and isinstance(data["output_text"], str):
             content = data["output_text"]
         elif choices:
@@ -391,11 +435,26 @@ class OpenAIReasoningProvider:
             msg = choice.get("message", {})
             content = msg.get("content", "")
         elif "output" in data and isinstance(data["output"], list) and len(data["output"]) > 0:
-            first_out = data["output"][0]
-            if isinstance(first_out, dict):
-                content = first_out.get("content", [{}])[0].get("text", "") if isinstance(first_out.get("content"), list) else str(first_out)
-            else:
-                content = str(first_out)
+            extracted_text_parts = []
+            for item in data["output"]:
+                if not isinstance(item, dict):
+                    continue
+                item_type = item.get("type")
+                if item_type == "message" or item.get("role") == "assistant":
+                    c = item.get("content", [])
+                    if isinstance(c, list):
+                        for c_item in c:
+                            if isinstance(c_item, dict) and c_item.get("type") == "output_text":
+                                extracted_text_parts.append(c_item.get("text", ""))
+                            elif isinstance(c_item, str):
+                                extracted_text_parts.append(c_item)
+                    elif isinstance(c, str):
+                        extracted_text_parts.append(c)
+                elif item_type == "reasoning":
+                    for s in item.get("summary", []):
+                        if isinstance(s, dict) and "text" in s:
+                            reasoning_summary = s["text"]
+            content = "\n".join(extracted_text_parts) if extracted_text_parts else (data.get("output_text") or "")
         else:
             return self._handle_failure(
                 request=request,
@@ -404,6 +463,10 @@ class OpenAIReasoningProvider:
                 error_msg="Malformed response: neither choices nor output_text present",
                 latency_ms=latency_ms,
             )
+
+        incomplete_reason = (data.get("incomplete_details") or {}).get("reason")
+        if incomplete_reason:
+            finish_reason = incomplete_reason
 
         # Check for model refusal
         refusal_reason = msg.get("refusal") or data.get("refusal")
@@ -421,15 +484,22 @@ class OpenAIReasoningProvider:
                 errors=[refusal_text],
             )
 
-        # Parse usage
+        # Parse usage (supporting both Chat and Responses API conventions)
         raw_usage = data.get("usage", {})
+        prompt_tokens = raw_usage.get("prompt_tokens") or raw_usage.get("input_tokens") or 0
+        completion_tokens = raw_usage.get("completion_tokens") or raw_usage.get("output_tokens") or 0
+        total_tokens = raw_usage.get("total_tokens") or (prompt_tokens + completion_tokens)
         usage = {
-            "prompt_tokens": raw_usage.get("prompt_tokens", 0),
-            "completion_tokens": raw_usage.get("completion_tokens", 0),
-            "total_tokens": raw_usage.get("total_tokens", 0),
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": total_tokens,
         }
         if "completion_tokens_details" in raw_usage:
             details = raw_usage["completion_tokens_details"]
+            if "reasoning_tokens" in details:
+                usage["reasoning_tokens"] = details["reasoning_tokens"]
+        elif "output_tokens_details" in raw_usage:
+            details = raw_usage["output_tokens_details"]
             if "reasoning_tokens" in details:
                 usage["reasoning_tokens"] = details["reasoning_tokens"]
 

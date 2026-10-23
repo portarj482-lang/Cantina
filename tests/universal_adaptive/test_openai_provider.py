@@ -90,6 +90,18 @@ class OpenAIConfigTestCase(unittest.TestCase):
         self.assertTrue(cfg.store_responses)
         self.assertEqual(cfg.fallback_provider, "none")
 
+    def test_from_env_dotenv_file(self):
+        import tempfile
+        from pathlib import Path
+        from universal_adaptive_engine.providers.config import load_dotenv_dict
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env_file = Path(tmpdir) / ".env"
+            env_file.write_text("OPENAI_API_KEY=sk-test-from-dotenv-file-12345\nOPENAI_MODEL=gpt-4o\n# Comment\n", encoding="utf-8")
+            loaded = load_dotenv_dict(env_file)
+            self.assertEqual(loaded.get("OPENAI_API_KEY"), "sk-test-from-dotenv-file-12345")
+            self.assertEqual(loaded.get("OPENAI_MODEL"), "gpt-4o")
+
     def test_from_env_non_reasoning_model_drops_effort(self):
         fake_env = {
             "OPENAI_API_KEY": "sk-proj-testkey",
@@ -196,7 +208,15 @@ class OpenAIProviderMockedTestCase(unittest.TestCase):
             }
             return 200, data, {}
 
-        provider = OpenAIReasoningProvider(config=self.config, transport=mock_transport)
+        chat_config = OpenAIConfig(
+            api_key=self.fake_key,
+            model="o3-mini",
+            reasoning_effort="high",
+            timeout_seconds=10.0,
+            max_retries=2,
+            api_mode="chat_completions",
+        )
+        provider = OpenAIReasoningProvider(config=chat_config, transport=mock_transport)
         req = ReasoningRequest(
             prompt="Analyze dispute finalization invariant",
             purpose=ReasoningPurpose.SECURITY_ANALYSIS,
@@ -219,6 +239,85 @@ class OpenAIProviderMockedTestCase(unittest.TestCase):
         content_blobs = [m["content"] for m in sent["messages"]]
         self.assertTrue(any("smart contract security expert" in c for c in content_blobs))
         self.assertTrue(any("DisputeGame" in c for c in content_blobs))
+
+    def test_successful_reasoning_responses_api(self):
+        captured_payloads = []
+
+        def mock_transport(method, url, headers, payload, timeout):
+            captured_payloads.append(payload)
+            data = {
+                "id": "resp-test-123",
+                "model": "o3-mini",
+                "output_text": "Analysis: Responses API confirmed invariant INV-DISPUTE-01.",
+                "usage": {
+                    "input_tokens": 50,
+                    "output_tokens": 25,
+                    "total_tokens": 75,
+                },
+            }
+            return 200, data, {}
+
+        provider = OpenAIReasoningProvider(config=self.config, transport=mock_transport)
+        req = ReasoningRequest(
+            prompt="Analyze dispute finalization invariant",
+            purpose=ReasoningPurpose.SECURITY_ANALYSIS,
+        )
+
+        resp = provider.reason(req)
+        self.assertEqual(resp.status, ReasoningStatus.SUCCESS)
+        self.assertIn("INV-DISPUTE-01", resp.content)
+
+        sent = captured_payloads[0]
+        self.assertEqual(sent["model"], "o3-mini")
+        self.assertEqual(sent["reasoning"], {"effort": "high"})
+        self.assertIn("input", sent)
+
+    def test_responses_api_output_array_parsing(self):
+        def mock_transport(method, url, headers, payload, timeout):
+            data = {
+                "id": "resp-test-456",
+                "model": "o3-mini",
+                "output": [
+                    {
+                        "type": "reasoning",
+                        "summary": [{"type": "summary_text", "text": "Reasoned about withdrawal delay."}],
+                    },
+                    {
+                        "type": "message",
+                        "role": "assistant",
+                        "content": [
+                            {"type": "output_text", "text": "Final Analysis: Invariant INV-DELAYED-WETH-02 verified."}
+                        ],
+                    },
+                ],
+                "usage": {
+                    "input_tokens": 80,
+                    "output_tokens": 40,
+                    "total_tokens": 120,
+                },
+            }
+            return 200, data, {}
+
+        provider = OpenAIReasoningProvider(config=self.config, transport=mock_transport)
+        req = ReasoningRequest(prompt="Check delayed WETH invariant")
+        resp = provider.reason(req)
+        self.assertEqual(resp.status, ReasoningStatus.SUCCESS)
+        self.assertIn("INV-DELAYED-WETH-02", resp.content)
+        self.assertEqual(resp.usage["total_tokens"], 120)
+
+    def test_cancel_response(self):
+        called_url = []
+
+        def mock_transport(method, url, headers, payload, timeout):
+            called_url.append((method, url))
+            return 200, {"id": "resp-789", "status": "cancelled"}, {}
+
+        provider = OpenAIReasoningProvider(config=self.config, transport=mock_transport)
+        ok, res = provider.cancel_response("resp-789")
+        self.assertTrue(ok)
+        self.assertEqual(res["status"], "cancelled")
+        self.assertEqual(called_url[0][0], "POST")
+        self.assertIn("/v1/responses/resp-789/cancel", called_url[0][1])
 
     def test_successful_structured_output_clean_json(self):
         structured_json = {

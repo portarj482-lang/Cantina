@@ -224,12 +224,17 @@ class OpenAIReasoningGateway:
 
         # 7. Endpoint / Path Check
         path = parsed.path.rstrip("/")
-        # Normalize endpoint
-        if path not in self.AUTHORIZED_ENDPOINTS and f"{path}/" not in self.AUTHORIZED_ENDPOINTS:
+        # Normalize endpoint (allowing exact endpoints and /v1/responses/{id} subpaths such as cancellation)
+        is_authorized = (
+            path in self.AUTHORIZED_ENDPOINTS or
+            f"{path}/" in self.AUTHORIZED_ENDPOINTS or
+            path.startswith("/v1/responses/")
+        )
+        if not is_authorized:
             return (
                 GatewayPolicyDecision.BLOCKED_UNAUTHORIZED_ENDPOINT,
                 f"Endpoint '{parsed.path}' is unauthorized. Scoped reasoning gateway permits exclusively "
-                f"{sorted(self.AUTHORIZED_ENDPOINTS)}.",
+                f"{sorted(self.AUTHORIZED_ENDPOINTS)} and '/v1/responses/*'.",
             )
 
         return GatewayPolicyDecision.ALLOWED, None

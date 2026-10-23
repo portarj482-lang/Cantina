@@ -3,7 +3,36 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Optional
+
+
+def load_dotenv_dict(env_path: Optional[Path] = None) -> dict[str, str]:
+    """Parse key-value pairs from a .env file without external dependencies."""
+    candidates = []
+    if env_path is not None:
+        candidates.append(env_path)
+    else:
+        candidates.append(Path.cwd() / ".env")
+        candidates.append(Path(__file__).resolve().parent.parent.parent / ".env")
+
+    env_vars: dict[str, str] = {}
+    for cand in candidates:
+        if cand.is_file():
+            try:
+                for line in cand.read_text(encoding="utf-8").splitlines():
+                    clean = line.strip()
+                    if not clean or clean.startswith("#") or "=" not in clean:
+                        continue
+                    key, val = clean.split("=", 1)
+                    key = key.strip()
+                    val = val.strip().strip("'\"")
+                    if key and key not in env_vars:
+                        env_vars[key] = val
+            except Exception:
+                pass
+            break
+    return env_vars
 
 
 REASONING_MODELS = frozenset([
@@ -76,8 +105,13 @@ class OpenAIConfig:
 
     @classmethod
     def from_env(cls, env: Optional[dict[str, str]] = None) -> OpenAIConfig:
-        """Construct configuration from environment variables or custom dict."""
-        source = env if env is not None else os.environ
+        """Construct configuration from environment variables, .env file, or custom dict."""
+        if env is not None:
+            source = env
+        else:
+            dotenv_vars = load_dotenv_dict()
+            # os.environ values take precedence over .env file values
+            source = {**dotenv_vars, **os.environ}
 
         api_key = source.get("OPENAI_API_KEY", "").strip() or None
         model = source.get("OPENAI_MODEL", "o3-mini").strip() or "o3-mini"

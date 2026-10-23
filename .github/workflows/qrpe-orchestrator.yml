@@ -68,7 +68,7 @@ jobs:
 
       - name: Initialize Public Test Submodules
         run: |
-          git submodule update --init --recursive bounties/base/contracts bounties/agglayer/ulxly-contracts bounties/agglayer/vault-bridge bounties/agglayer/agglayer-contracts bounties/liquity/bold || true
+          git submodule update --init --recursive bounties/base/contracts bounties/base/base bounties/agglayer/ulxly-contracts bounties/agglayer/vault-bridge bounties/agglayer/agglayer-contracts bounties/liquity/bold || true
 
       - name: Install Python Dependencies
         run: |
@@ -111,7 +111,7 @@ jobs:
 
       - name: Initialize Public Test Submodules
         run: |
-          git submodule update --init --recursive bounties/base/contracts bounties/agglayer/ulxly-contracts bounties/agglayer/vault-bridge || true
+          git submodule update --init --recursive bounties/base/contracts bounties/base/base bounties/agglayer/ulxly-contracts bounties/agglayer/vault-bridge || true
 
       - name: Execute QRPE Full Pipeline Dry-Run
         run: |

@@ -20,7 +20,7 @@ from universal_adaptive_engine.providers.config import (
     REASONING_MODELS,
     SUPPORTED_REASONING_EFFORTS,
 )
-from universal_adaptive_engine.providers.openai_provider import OpenAIReasoningProvider
+from universal_adaptive_engine.providers.openai_provider import OpenAIReasoningProvider, _default_requests_transport
 from universal_adaptive_engine.providers.factory import (
     get_reasoning_provider,
     list_available_providers,
@@ -180,6 +180,31 @@ class OpenAIProviderMockedTestCase(unittest.TestCase):
         health = provider.health_check()
         self.assertEqual(health.status, "UNHEALTHY")
         self.assertIn("Invalid API key", health.error or "")
+
+    def test_default_health_check_probes_provider_instead_of_trusting_configuration(self):
+        provider = OpenAIReasoningProvider(config=self.config)
+        calls = []
+
+        def unavailable_probe(**kwargs):
+            calls.append(kwargs)
+            return 503, {"error": {"message": "temporarily unavailable"}}, {}
+
+        provider.gateway.dispatch_request = unavailable_probe
+        health = provider.health_check()
+        self.assertEqual(health.status, "UNHEALTHY")
+        self.assertEqual(len(calls), 1)
+        self.assertTrue(calls[0]["url"].endswith("/v1/models"))
+
+    def test_default_transport_exposes_redirects_to_gateway_for_rejection(self):
+        response = MagicMock(status_code=302, headers={"Location": "https://example.invalid/"}, text="")
+        response.json.return_value = {}
+        request = MagicMock(return_value=response)
+        with patch.dict("sys.modules", {"requests": MagicMock(request=request)}):
+            status, _, _ = _default_requests_transport(
+                "POST", "https://api.openai.com/v1/responses", {"Authorization": "Bearer test"}, {"input": "test"}, 1.0
+            )
+        self.assertEqual(status, 302)
+        self.assertFalse(request.call_args.kwargs["allow_redirects"])
 
     def test_successful_reasoning_chat_completions(self):
         captured_payloads = []

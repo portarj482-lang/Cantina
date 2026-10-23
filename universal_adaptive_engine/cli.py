@@ -174,7 +174,8 @@ def main() -> int:
             "reasoning_provider": provider_health,
         }
         print(json.dumps(output, indent=2))
-        return 0 if (host_health["status"] == "HEALTHY" and cantina_health["status"] in ("HEALTHY", "DEGRADED")) else 1
+        providers_ok = provider_health.get("status") == "HEALTHY"
+        return 0 if (host_health["status"] == "HEALTHY" and cantina_health["status"] in ("HEALTHY", "DEGRADED") and providers_ok) else 1
 
     elif args.command == "reason":
         context_data = {}

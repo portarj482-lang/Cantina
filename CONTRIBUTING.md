@@ -7,6 +7,9 @@ Welcome to the Cantina workspace. Follow these guidelines to maintain repository
 ## 1. Quickstart Development Setup
 
 ```bash
+# 0. Initialize and sync all submodules
+git submodule update --init --recursive
+
 # 1. Create a clean virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
@@ -34,6 +37,10 @@ Before committing any changes:
 
 Nested repositories are governed by [maintenance/nested-repos-policy.md](maintenance/nested-repos-policy.md).
 
+- **Cloning & Syncing:** When cloning or switching branches, initialize and recursively fetch all registered submodules:
+  ```bash
+  git submodule update --init --recursive
+  ```
 - **Never create loose untracked `.git` repositories in the workspace.**
 - To add a dependency larger than 50MB, register it as a submodule via `./scripts/convert-to-submodule.sh`.
 - To absorb a first-party package under 5MB, use `./scripts/absorb-nested.sh`.

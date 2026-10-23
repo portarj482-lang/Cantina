@@ -21,5 +21,7 @@
 ## 4. Monorepo Hygiene & Nested Repository Invariants
 - Never commit loose `.git` directories or unmanaged nested repositories into the workspace.
 - Repositories > 50MB must be tracked via `.gitmodules` as canonical Git submodules.
+- Submodule names in `.gitmodules` must use path-derived prefixes to eliminate section collisions.
 - First-party packages < 5MB absorbed into the monorepo must have their historical `.git` metadata preserved in `maintenance/backups/<timestamp>/`.
 - Tracked runtime files (`.env`, `node_modules/`, `*.so`, `__pycache__`, `*.log`) are strictly prohibited; `make audit` must pass before any release commit.
+- External API transports must enforce strict TLS verification and reject HTTP redirects (allow_redirects=False).

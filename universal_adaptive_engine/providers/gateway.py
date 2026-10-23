@@ -12,7 +12,9 @@ from __future__ import annotations
 import json
 import os
 import time
+import urllib.error
 import urllib.parse
+import urllib.request
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
@@ -91,46 +93,52 @@ def _default_tls_transport(
     """Default transport executing strictly over HTTPS with mandatory TLS verification."""
     try:
         import requests
-        # Disallow redirects to prevent redirection attacks to non-whitelisted destinations
+    except ImportError:
+        requests = None
+
+    if requests is not None:
+        # Never follow redirects: the gateway must see and reject the 3xx response.
         resp = requests.request(
             method=method,
             url=url,
             headers=headers,
             json=payload,
             timeout=timeout,
-            verify=True,  # Mandatory TLS certificate verification
-            allow_redirects=False,  # Section 6A.3: Do not permit redirects to arbitrary destinations
+            verify=True,
+            allow_redirects=False,
         )
         try:
             data = resp.json()
         except Exception:
             data = {"raw_text": resp.text}
         return resp.status_code, data, dict(resp.headers)
-    except Exception as e:
-        # Fall back to urllib.request if requests fails or is unavailable
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8") if payload else None,
-            headers=headers,
-            method=method,
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=timeout) as response:
-                body = response.read().decode("utf-8")
-                try:
-                    data = json.loads(body)
-                except Exception:
-                    data = {"raw_text": body}
-                return response.status, data, dict(response.headers)
-        except urllib.error.HTTPError as he:
-            body = he.read().decode("utf-8") if he.fp else ""
+
+    class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, response_headers, newurl):
+            return None
+
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8") if payload else None,
+        headers=headers,
+        method=method,
+    )
+    opener = urllib.request.build_opener(NoRedirectHandler())
+    try:
+        with opener.open(req, timeout=timeout) as response:
+            body = response.read().decode("utf-8")
             try:
                 data = json.loads(body)
             except Exception:
                 data = {"raw_text": body}
-            return he.code, data, dict(he.headers)
-        except Exception as ue:
-            raise ue
+            return response.status, data, dict(response.headers)
+    except urllib.error.HTTPError as error:
+        body = error.read().decode("utf-8", errors="replace") if error.fp else ""
+        try:
+            data = json.loads(body)
+        except Exception:
+            data = {"raw_text": body}
+        return error.code, data, dict(error.headers)
 
 
 class OpenAIReasoningGateway:

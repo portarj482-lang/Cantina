@@ -48,6 +48,8 @@ def _default_requests_transport(
             headers=headers,
             json=payload,
             timeout=timeout,
+            verify=True,
+            allow_redirects=False,
         )
         try:
             data = resp.json()
@@ -57,6 +59,11 @@ def _default_requests_transport(
     except ImportError:
         import urllib.request
         import urllib.error
+
+        class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, response_headers, newurl):
+                return None
+
         req = urllib.request.Request(
             url=url,
             data=json.dumps(payload).encode("utf-8"),
@@ -64,7 +71,8 @@ def _default_requests_transport(
             method=method,
         )
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as response:
+            opener = urllib.request.build_opener(NoRedirectHandler())
+            with opener.open(req, timeout=timeout) as response:
                 body = response.read().decode("utf-8")
                 return response.status, json.loads(body), dict(response.headers)
         except urllib.error.HTTPError as e:
@@ -125,41 +133,31 @@ class OpenAIReasoningProvider:
             )
         try:
             self.config.validate()
-            # If a custom or mock transport is injected, run a probe via the gateway
-            if self.transport is not _default_requests_transport:
-                base = self.config.base_url.rstrip("/")
-                models_url = f"{base}/models" if base.endswith("/v1") else f"{base}/v1/models"
-                status_code, data, _ = self.gateway.dispatch_request(
-                    method="GET",
-                    url=models_url,
-                    headers={"Authorization": f"Bearer {self.config.api_key}"},
-                    payload=None,
-                    timeout=min(self.config.timeout_seconds, 5.0),
-                    caller_component=self.gateway.GATEWAY_COMPONENT_NAME,
+            base = self.config.base_url.rstrip("/")
+            models_url = f"{base}/models" if base.endswith("/v1") else f"{base}/v1/models"
+            status_code, data, _ = self.gateway.dispatch_request(
+                method="GET",
+                url=models_url,
+                headers={"Authorization": f"Bearer {self.config.api_key}"},
+                payload=None,
+                timeout=min(self.config.timeout_seconds, 5.0),
+                caller_component=self.gateway.GATEWAY_COMPONENT_NAME,
+            )
+            latency_ms = (time.time() - t0) * 1000
+            if status_code == 200:
+                return ProviderHealth(
+                    provider=self.provider_name,
+                    status="HEALTHY",
+                    model=self.config.model,
+                    latency_ms=round(latency_ms, 2),
                 )
-                latency_ms = (time.time() - t0) * 1000
-                if status_code == 200:
-                    return ProviderHealth(
-                        provider=self.provider_name,
-                        status="HEALTHY",
-                        model=self.config.model,
-                        latency_ms=round(latency_ms, 2),
-                    )
-                else:
-                    err_msg = self._extract_error_message(data) if isinstance(data, dict) else f"HTTP {status_code}"
-                    return ProviderHealth(
-                        provider=self.provider_name,
-                        status="UNHEALTHY",
-                        model=self.config.model,
-                        latency_ms=round(latency_ms, 2),
-                        error=err_msg,
-                    )
-
+            err_msg = self._extract_error_message(data) if isinstance(data, dict) else f"HTTP {status_code}"
             return ProviderHealth(
                 provider=self.provider_name,
-                status="HEALTHY",
+                status="UNHEALTHY",
                 model=self.config.model,
-                latency_ms=round((time.time() - t0) * 1000, 2),
+                latency_ms=round(latency_ms, 2),
+                error=err_msg,
             )
         except Exception as e:
             return ProviderHealth(

@@ -61,3 +61,6 @@
 [submodule "base-mcp-legacy"]
 	path = base-mcp-legacy
 	url = https://github.com/base/base-mcp-legacy.git
+[submodule "agglayer-contracts"]
+	path = bounties/agglayer/agglayer-contracts
+	url = https://github.com/agglayer/agglayer-contracts.git

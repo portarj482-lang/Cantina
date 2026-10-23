@@ -12,3 +12,12 @@ out/
 *.env
 !.env.example
 
+# Local Postgres runtime and data
+/data/
+/data/postmaster.pid
+/data/pg_wal/
+/data/base/
+/*.pid
+/security-mesh/data/
+/security-mesh/dist/
+

@@ -14,7 +14,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-REPO_ROOT="/home/nova/projects/cantina"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="${REPO_ROOT:-$(cd -- "$SCRIPT_DIR/../.." && pwd -P)}"
 OUT_FILE="$REPO_ROOT/bounties/$SLUG/scans/counterexamples.json"
 
 echo "=== [Pack D] Workflow: Counterexample Tracer ($SLUG) ==="

@@ -6,7 +6,8 @@ set -euo pipefail
 DRY_RUN=false
 CONFIRM=false
 SLUG="base"
-REPO_ROOT="/home/nova/projects/cantina"
+SCRIPT_DIR="$(cd -- "${BASH_SOURCE[0]%/*}" >/dev/null 2>&1 && pwd -P)"
+REPO_ROOT="${CANTINA_REPO_ROOT:-$(cd -- "$SCRIPT_DIR/../.." && pwd -P)}"
 
 usage() {
   cat <<'EOF' >&2

@@ -4,7 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "${BASH_SOURCE[0]%/*}" >/dev/null 2>&1 && pwd -P)"
 WORKFLOW="$SCRIPT_DIR/../workflow-normalize.sh"
-REPO_ROOT="/home/nova/projects/cantina"
+REPO_ROOT="${REPO_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd -P)}"
 
 TEST_COUNT=0
 PASS_COUNT=0

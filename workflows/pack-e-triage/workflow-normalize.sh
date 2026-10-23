@@ -4,7 +4,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "${BASH_SOURCE[0]%/*}" >/dev/null 2>&1 && pwd -P)"
-REPO_ROOT="${CANTINA_REPO_ROOT:-/home/nova/projects/cantina}"
+REPO_ROOT="${CANTINA_REPO_ROOT:-$(cd -- "$SCRIPT_DIR/../.." && pwd -P)}"
 
 DRY_RUN=false
 CONFIRM=false

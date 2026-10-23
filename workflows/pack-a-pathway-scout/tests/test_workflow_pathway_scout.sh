@@ -5,7 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKFLOW="$SCRIPT_DIR/../workflow-pathway-scout.sh"
-REPO_ROOT="/home/nova/projects/cantina"
+REPO_ROOT="${REPO_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd -P)}"
 VALIDATOR="$REPO_ROOT/workflows/pack-e-triage/validate_schemas.py"
 META_PERSONA="$SCRIPT_DIR/../META_PERSONA.md"
 INDEX="$REPO_ROOT/global/agents/index.md"

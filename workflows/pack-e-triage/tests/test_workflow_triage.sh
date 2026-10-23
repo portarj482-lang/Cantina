@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "${BASH_SOURCE[0]%/*}" >/dev/null 2>&1 && pwd -P)"
 WORKFLOW="$SCRIPT_DIR/../workflow-triage.sh"
-REPO_ROOT="/home/nova/projects/cantina"
+REPO_ROOT="${REPO_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd -P)}"
 VALIDATOR="$SCRIPT_DIR/../validate_schemas.py"
 
 TEST_COUNT=0

@@ -113,7 +113,7 @@ def validate_recon_payload(data: dict, schema_path: Path | None = None) -> tuple
 def main() -> int:
     parser = argparse.ArgumentParser(description="Pack A — Smart Contract Reconnaissance Engine")
     parser.add_argument("--slug", default="base", help="Bounty slug identifier")
-    parser.add_argument("--repo-root", default="/home/nova/projects/cantina", help="Repository root path")
+    parser.add_argument("--repo-root", default=str(Path(__file__).resolve().parents[2]), help="Repository root path")
     parser.add_argument("--bounty-dir", default=None, help="Explicit bounty directory override")
     parser.add_argument("--output", default=None, help="Explicit output JSON path")
     parser.add_argument("--dry-run", action="store_true", help="Simulate without writing files")

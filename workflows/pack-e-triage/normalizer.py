@@ -455,7 +455,7 @@ def normalize_findings_artifact(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Pack E Findings Normalization Engine.")
     parser.add_argument("--slug", default="base", help="Target bounty slug")
-    parser.add_argument("--repo-root", default="/home/nova/projects/cantina", help="Cantina repo root")
+    parser.add_argument("--repo-root", default=str(Path(__file__).resolve().parents[2]), help="Cantina repo root")
     parser.add_argument("--dry-run", action="store_true", help="Preview normalization without writing")
     parser.add_argument("--confirm", action="store_true", help="Authorize normalization write")
     parser.add_argument("--commit", default=None, help="Pinned revision hash")

@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd -- "${BASH_SOURCE[0]%/*}" >/dev/null 2>&1 && pwd -P)"
 WORKFLOW_DIR="$(cd "$SCRIPT_DIR/.." && pwd -P)"
 WORKFLOW_SCRIPT="$WORKFLOW_DIR/workflow-overlap.sh"
 VALIDATOR_SCRIPT="$WORKFLOW_DIR/validate_schemas.py"
-REPO_ROOT="/home/nova/projects/cantina"
+REPO_ROOT="${REPO_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd -P)}"
 
 cleanup() {
   rm -rf "$TEST_ROOT"

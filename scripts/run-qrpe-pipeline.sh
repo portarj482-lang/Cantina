@@ -2,13 +2,15 @@
 # ==============================================================================
 # Quantum Recursive Pipeline Engineer (QRPE) — Unified Pipeline Runner
 # Version: 1.0.0
-# Canonical Path: /home/nova/projects/cantina/scripts/run-qrpe-pipeline.sh
+# Repository-relative paths for local and CI execution
 # ==============================================================================
 set -euo pipefail
 
 export PATH="/home/nova/.local/bin:/home/nova/.cargo/bin:/home/nova/.foundry/bin:$PATH"
 
-REPO_ROOT="/home/nova/projects/cantina"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
+export REPO_ROOT
 REPORT_DIR="$REPO_ROOT/maintenance/reports"
 LOG_FILE="$REPORT_DIR/qrpe-pipeline-run.log"
 
@@ -34,7 +36,12 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --pack) PACK="$2"; shift 2 ;;
+    --pack)
+      if [[ $# -lt 2 || -z "${2:-}" || "$2" == --* ]]; then
+        echo "ERROR: --pack requires a pack name" >&2
+        exit 2
+      fi
+      PACK="$2"; shift 2 ;;
     --dry-run) DRY_RUN=true; shift ;;
     --confirm) CONFIRM=true; shift ;;
     -h|--help) usage ;;
@@ -42,7 +49,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-mkdir -p "$REPORT_DIR"
+if [[ "$DRY_RUN" == true || "$CONFIRM" == false ]]; then
+  LOG_FILE=/dev/null
+else
+  mkdir -p "$REPORT_DIR"
+fi
 
 MODE_STR="CONFIRM (MUTATING)"
 FLAG="--confirm"

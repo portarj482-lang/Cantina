@@ -143,7 +143,7 @@ def _default_tls_transport(
 
 class OpenAIReasoningGateway:
     """Isolated, narrowly scoped egress gateway for OpenAI API reasoning traffic.
-    
+
     Guarantees:
     1. Only api.openai.com:443 is reachable.
     2. Only /v1/responses, /v1/chat/completions, and /v1/models are authorized.

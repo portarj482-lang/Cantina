@@ -2,9 +2,9 @@ name: QRPE Autonomous Pipeline & Verification Orchestrator
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ master ]
+    branches: [ main, master ]
 
 concurrency:
   group: qrpe-${{ github.ref }}
@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -39,9 +39,15 @@ jobs:
           cd security-mesh/security-mesh
           npm ci
 
+      - name: Build Security Mesh Registry
+        run: |
+          cd security-mesh/security-mesh
+          npm run build
+
       - name: Verify Agent & Oracle Registry Reconciliation
         run: |
-          npx --prefix security-mesh/security-mesh tsx scripts/reconcile-registries.ts --verify
+          cd security-mesh/security-mesh
+          npx tsx ../../scripts/reconcile-registries.ts --verify
 
   test-suites:
     name: Universal Adaptive & Security Mesh Tests
@@ -55,20 +61,37 @@ jobs:
       - name: Setup Node.js & Python
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
+      - name: Install Python Dependencies
+        run: |
+          python3 -m pip install -e ".[dev]"
+
+      - name: Install Python Dependencies
+        run: |
+          python3 -m pip install -e ".[dev]"
+
       - name: Run Python Universal Adaptive Test Suite
         run: |
           python3 -m unittest discover -s tests/universal_adaptive
+
+      - name: Lint and Typecheck Python
+        run: |
+          make lint typecheck
+
+      - name: Lint and Typecheck Python
+        run: |
+          make lint typecheck
 
       - name: Run TypeScript Security Mesh Test Suite
         run: |
           cd security-mesh/security-mesh
           npm ci
+          npm run typecheck
           npm test
 
   pipeline-dry-run:

@@ -43,7 +43,7 @@ class KnowledgeCuratorWorkflow(AgentWorkflow):
 
         return {
             "status": "COMPLETED_VERIFIED",
-            "summary": f"Knowledge Curator registered provenance and verified cryptographic hashes",
+            "summary": "Knowledge Curator registered provenance and verified cryptographic hashes",
             "claims": claims,
             "evidence_refs": evidence_refs,
             "artifacts": [str(artifact_to_hash)],

@@ -2,7 +2,8 @@
 set -Eeuo pipefail
 umask 077
 
-REPO_ROOT="${REPO_ROOT:-/home/nova/projects/cantina}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="${REPO_ROOT:-$(cd -- "$SCRIPT_DIR/../.." && pwd -P)}"
 
 DRY_RUN=false
 CONFIRM=false
@@ -212,8 +213,8 @@ if os.path.isfile(schema_file):
         with open(schema_file, encoding="utf-8") as sf:
             schema = json.load(sf)
         jsonschema.validate(instance=record, schema=schema)
-    except ImportError:
-        pass
+    except ImportError as exc:
+        raise RuntimeError("jsonschema is required for validation") from exc
 PY
 
 # Test simulation hook for pre-commit change
@@ -257,8 +258,8 @@ if os.path.isfile(schema_file):
         with open(schema_file, encoding="utf-8") as sf:
             schema = json.load(sf)
         jsonschema.validate(instance=record, schema=schema)
-    except ImportError:
-        pass
+    except ImportError as exc:
+        raise RuntimeError("jsonschema is required for validation") from exc
 PY
 
 printf '[OK] Mode: PIN_VERIFIED. Artifact committed: %s\n' "$PIN_JSON"

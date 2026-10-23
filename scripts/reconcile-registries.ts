@@ -14,7 +14,7 @@ interface ReconciliationReport {
 }
 
 async function main() {
-  const repoRoot = path.resolve('/home/nova/projects/cantina');
+  const repoRoot = path.resolve(import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname), '..');
   const globalAgentsDir = path.join(repoRoot, 'global', 'agents');
   const reportsDir = path.join(repoRoot, 'maintenance', 'reports');
 
@@ -35,7 +35,7 @@ async function main() {
   for (const f of mdFiles) {
     if (f.startsWith('G') && f.includes('oracle')) {
       governanceOracles.push(f.replace('.md', ''));
-    } else if (!['AGENT_SET.md', 'CONTRACT.md', 'PLAYBOOKS.md', 'index.md', 'bug-hunting-system.md'].includes(f)) {
+    } else if (!['AGENT_SET.md', 'CONTRACT.md', 'PLAYBOOKS.md', 'index.md', 'bug-hunting-system.md', 'meta-agent-v2.md'].includes(f)) {
       mdAgentIds.add(f.replace('.md', ''));
     }
   }
@@ -83,14 +83,17 @@ async function main() {
   };
 
   const reportPath = path.join(reportsDir, 'registry-reconciliation.json');
-  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), 'utf-8');
+  const isVerify = process.argv.includes('--verify');
+  if (!isVerify) {
+    fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), 'utf-8');
+    console.log(`[Reconcile] Report saved to: ${reportPath}`);
+  }
 
   console.log(`[Reconcile] Status: ${report.status}`);
   console.log(`[Reconcile] Total TS Agents: ${report.totalTsAgents}`);
   console.log(`[Reconcile] Total MD Agents: ${report.totalMdAgents}`);
   console.log(`[Reconcile] Reconciled Agents: ${report.reconciledAgents.length}`);
   console.log(`[Reconcile] Governance Oracles: ${report.governanceOracles.length}`);
-  console.log(`[Reconcile] Report saved to: ${reportPath}`);
 
   if (process.argv.includes('--verify')) {
     if (!isReconciled) {

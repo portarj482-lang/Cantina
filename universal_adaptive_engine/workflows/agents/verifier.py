@@ -109,7 +109,7 @@ class VerificationEngineerWorkflow(AgentWorkflow):
                 raise RuntimeError(f"Forge verification tests failed: {failed_tests}")
 
             claims = [
-                f"Forge test suite passed deterministically with exit code 0",
+                "Forge test suite passed deterministically with exit code 0",
                 f"Executed via {forge_bin} with output digest {output_digest[:16]}...",
             ]
             evidence_refs = [f"EVID-VERIFY-FORGE-PASS-{task_id}"]

@@ -54,7 +54,7 @@ class OrchestrationReport:
 
     def to_markdown(self) -> str:
         lines = [
-            f"# Execution & Orchestration Report",
+            "# Execution & Orchestration Report",
             f"**Completion State:** `{self.completion_state}`",
             f"**Timestamp:** {self.timestamp}",
             f"**Primary Goal:** {self.goal}",

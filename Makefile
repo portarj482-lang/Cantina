@@ -26,10 +26,10 @@ test-unit:
 	python3 -m unittest discover -s tests/universal_adaptive -v
 
 lint:
-	python3 -m ruff check universal_adaptive_engine tests || true
+	python3 -m ruff check universal_adaptive_engine tests
 
 typecheck:
-	python3 -m mypy universal_adaptive_engine || true
+	python3 -m mypy universal_adaptive_engine
 
 clean:
 	./scripts/clean-local.sh --dry-run

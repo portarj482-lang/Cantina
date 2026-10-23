@@ -38,7 +38,7 @@ class EvaluatorWorkflow(AgentWorkflow):
 
         return {
             "status": "COMPLETED_VERIFIED",
-            "summary": f"Evaluator confirmed 0 regressions and verified post-deployment stability",
+            "summary": "Evaluator confirmed 0 regressions and verified post-deployment stability",
             "claims": claims,
             "evidence_refs": evidence_refs,
             "next_action": "Orchestrator generates final machine-validated completion report",

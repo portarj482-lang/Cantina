@@ -94,7 +94,7 @@ class OpenAIConfigTestCase(unittest.TestCase):
         import tempfile
         from pathlib import Path
         from universal_adaptive_engine.providers.config import load_dotenv_dict
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             env_file = Path(tmpdir) / ".env"
             env_file.write_text("OPENAI_API_KEY=sk-test-from-dotenv-file-12345\nOPENAI_MODEL=gpt-4o\n# Comment\n", encoding="utf-8")

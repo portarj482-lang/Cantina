@@ -455,9 +455,6 @@ class TestOperationPipelines(unittest.TestCase):
         self.assertEqual(tc.metadata.get("target_file"), str(file_target.resolve()))
 
     def test_dispute_and_weth_verifier_forge_delegation_hooks(self):
-        from universal_adaptive_engine.workflows.operations.dispute_pipeline import DisputeProveVerifierWorkflow
-        from universal_adaptive_engine.workflows.operations.delayed_weth_pipeline import WETHSolvencyVerifierWorkflow
-
         disp_wf = DisputeProveVerifierWorkflow(self.cantina_adapter)
         # Passing broken forge command triggers the VerificationEngineer error handling
         with self.assertRaises(RuntimeError) as ctx:

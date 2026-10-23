@@ -70,3 +70,6 @@
 [submodule "forge-std"]
 	path = bounties/Revert v4lend Competition/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "hookmate"]
+	path = bounties/Revert v4lend Competition/lib/hookmate
+	url = https://github.com/akshatmittal/hookmate

@@ -1,6 +1,7 @@
 """Unit and integration tests for OpenAI Reasoning Provider in USAP."""
 import json
 import os
+from pathlib import Path
 import unittest
 from typing import Any, Tuple
 from unittest.mock import MagicMock, patch
@@ -578,7 +579,7 @@ class OrchestratorReasoningIntegrationTestCase(unittest.TestCase):
         provider = OpenAIReasoningProvider(config=cfg, transport=mock_transport)
 
         orchestrator = UniversalAdaptiveOrchestrator(
-            workspace_root="/home/nova/projects/cantina",
+            workspace_root=str(Path(__file__).resolve().parents[2]),
             reasoning_provider=provider,
         )
 

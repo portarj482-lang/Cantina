@@ -20,7 +20,7 @@ class CantinaExecutionSafetyTestCase(unittest.TestCase):
     """Test suite evaluating execution safety boundaries, non-synthetic tests, and fail-closed gates."""
 
     def setUp(self):
-        self.workspace_root = Path("/home/nova/projects/cantina")
+        self.workspace_root = Path(__file__).resolve().parents[2]
         self.cantina_adapter = CantinaBountyAdapter(self.workspace_root)
         self.host_adapter = HostEnvironmentAdapter(self.workspace_root)
 

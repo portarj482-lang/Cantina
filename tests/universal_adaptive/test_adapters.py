@@ -9,7 +9,7 @@ from universal_adaptive_engine.adapters.cantina_adapter import CantinaBountyAdap
 
 class AdaptersTestCase(unittest.TestCase):
     def setUp(self):
-        self.workspace_root = Path("/home/nova/projects/cantina")
+        self.workspace_root = Path(__file__).resolve().parents[2]
         self.host_adapter = HostEnvironmentAdapter(self.workspace_root)
         self.cantina_adapter = CantinaBountyAdapter(self.workspace_root)
 

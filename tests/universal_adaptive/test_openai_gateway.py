@@ -139,7 +139,7 @@ class OpenAIGatewayTestCase(unittest.TestCase):
             self.assertEqual(ctx.exception.decision, GatewayPolicyDecision.BLOCKED_UNAUTHORIZED_COMPONENT)
 
     def test_host_adapter_component_level_enforcement(self):
-        adapter = HostEnvironmentAdapter(Path("/home/nova/projects/cantina"))
+        adapter = HostEnvironmentAdapter(Path(__file__).resolve().parents[2])
 
         # 1. Designated reasoning gateway component: PROCEED
         valid_reasoning_contract = {
@@ -212,7 +212,7 @@ class OpenAIGatewayTestCase(unittest.TestCase):
     # Test F: Policy-Regression Test (Section 6A.7.F)
     # -------------------------------------------------------------------------
     def test_policy_regression_default_deny_preserved(self):
-        adapter = HostEnvironmentAdapter(Path("/home/nova/projects/cantina"))
+        adapter = HostEnvironmentAdapter(Path(__file__).resolve().parents[2])
 
         # General network.outbound MUST remain strictly blocked
         general_net_contract = {

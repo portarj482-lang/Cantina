@@ -110,7 +110,7 @@ class TestSpecialistAgentWorkflows(unittest.TestCase):
     """Test suite verifying all 12 specialist agent workflows individually."""
 
     def setUp(self):
-        self.workspace_root = Path("/home/nova/projects/cantina")
+        self.workspace_root = Path(__file__).resolve().parents[2]
         self.host_adapter = HostEnvironmentAdapter(self.workspace_root)
 
     def test_orchestrator_workflow_stages(self):
@@ -233,10 +233,18 @@ class TestSpecialistAgentWorkflows(unittest.TestCase):
         self.assertEqual(len(h.commands_run[0]["output_digest"]), 64)
 
     def test_verification_engineer_forge_detection(self):
+        import shutil
         wf = VerificationEngineerWorkflow(self.host_adapter)
         env = wf._resolve_tool_env()
         forge_bin = wf._resolve_forge_binary(env)
-        self.assertIsNotNone(forge_bin, "Forge binary should be discoverable via toolchain search")
+        has_forge = bool(
+            shutil.which("forge")
+            or any((d / "forge").exists() for d in [Path.home() / ".foundry" / "bin", Path.home() / ".cargo" / "bin", Path.home() / ".local" / "bin"])
+        )
+        if has_forge:
+            self.assertIsNotNone(forge_bin, "Forge binary should be discoverable via toolchain search")
+        else:
+            self.assertIsNone(forge_bin, "Forge binary should be None when not installed")
 
     def test_verification_engineer_fails_on_broken_test(self):
         wf = VerificationEngineerWorkflow(self.host_adapter)
@@ -308,7 +316,7 @@ class TestPipelineAndInheritance(unittest.TestCase):
     """Test suite verifying pipeline composition, inheritance, and execution."""
 
     def setUp(self):
-        self.workspace_root = Path("/home/nova/projects/cantina")
+        self.workspace_root = Path(__file__).resolve().parents[2]
         self.host_adapter = HostEnvironmentAdapter(self.workspace_root)
 
     def test_canonical_pipeline_full_run(self):

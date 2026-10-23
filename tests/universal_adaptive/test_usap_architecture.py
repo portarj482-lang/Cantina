@@ -21,7 +21,7 @@ class TestUSAPArchitecture(unittest.TestCase):
     """Exhaustive tests covering USAP governance, schema validation, and architecture portability."""
 
     def setUp(self):
-        self.workspace_root = Path("/home/nova/projects/cantina").resolve()
+        self.workspace_root = Path(__file__).resolve().parents[2]
         self.skills_dir = self.workspace_root / ".agents" / "skills"
 
     def test_all_39_skills_inventory_and_schema(self):

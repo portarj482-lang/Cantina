@@ -41,7 +41,7 @@ class TestOperationPipelines(unittest.TestCase):
     """Test suite covering all specialized domain operation pipelines."""
 
     def setUp(self):
-        self.workspace_root = Path("/home/nova/projects/cantina")
+        self.workspace_root = Path(__file__).resolve().parents[2]
         self.host_adapter = HostEnvironmentAdapter(self.workspace_root)
         self.cantina_adapter = CantinaBountyAdapter(self.workspace_root)
 

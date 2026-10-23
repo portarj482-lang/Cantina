@@ -23,7 +23,7 @@ def parse_frontmatter(content: str) -> dict[str, str]:
 
 class AgentsValidationTestCase(unittest.TestCase):
     def setUp(self):
-        self.workspace_root = Path("/home/nova/projects/cantina")
+        self.workspace_root = Path(__file__).resolve().parents[2]
         self.agents_dir = self.workspace_root / ".agents" / "agents"
         self.rules_dir = self.workspace_root / ".agents" / "rules"
         self.skills_dir = self.workspace_root / ".agents" / "skills"

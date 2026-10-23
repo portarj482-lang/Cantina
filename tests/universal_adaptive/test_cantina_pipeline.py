@@ -18,7 +18,7 @@ class CantinaPipelineTestCase(unittest.TestCase):
     """Test suite evaluating CantinaBountyPipeline execution, scope gating, and stage skips."""
 
     def setUp(self):
-        self.workspace_root = Path("/home/nova/projects/cantina")
+        self.workspace_root = Path(__file__).resolve().parents[2]
 
     def test_cantina_pipeline_initialization_with_strict_workspace(self):
         pipeline = CantinaBountyPipeline(self.workspace_root)

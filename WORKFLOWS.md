@@ -1,8 +1,8 @@
 # Cantina Advanced Bounty Workflows
 
-**Version:** 1.0 · **Date:** 2026-10-10
+**Version:** 1.1 · **Date:** 2026-10-22
 **Companion files:** `INSTRUCTIONS.md`, `.gemini/GEMINI.md`
-**Tool status:** Every scanner was MISSING at the 2026-10-10 check. **No command in this document has been run.** Commands and flags are written from tool documentation knowledge. Confirm each one with `--help` before its first use, and record the confirmed form in `global/tooling.md`.
+**Tool status:** `global/tooling.md` is the status source of truth. Its latest checks mark Foundry, Solana CLI, and Anchor available; scanner availability varies and some entries have not been refreshed since 2026-10-10. Re-run `/tool-check` before relying on a tool. Commands below are procedures, not evidence that a workflow ran; verify matching `logs/` and `scans/` artifacts before reporting a run.
 
 **Runtime boundary:** Most scanner, Foundry, Cast, Anvil, and fork steps below are EVM/Solidity-specific. They do not test Solana programs. For a Solana bounty, use a Solana-capable toolchain and the environment allowed by that program; do not treat the offline TypeScript models as program execution.
 
@@ -26,6 +26,18 @@
 | Read-only chain queries (W11) | Dependent steps, such as fuzz then replay |
 
 When subagents are used, each one gets the scope path and its task only. None gets the parent's conversation.
+
+### 0.2 Running the local pipeline
+
+The runner is a partial automation, not an auditor. It requires a valid bounty scope and matching snapshot. Run it from an isolated checkout of the pinned target commit; build, scan, fuzz, and PoC commands execute in the current directory. `BOUNTY_ROOT` points to the bounty metadata directory when it is not the runner's inferred `bounties/<slug>` path.
+
+```bash
+cd /path/to/isolated-target-checkout
+BOUNTY_ROOT=/path/to/cantina/bounties/<slug> \
+  /path/to/cantina/global/tools/run_pipeline.sh <slug> verify
+```
+
+Replace both placeholders before use. `verify` checks the scope snapshot and writes a ledger entry. Other stages also write to `scans/<date>_<stage>/`; `scan` requires `SEMGREP_RULES`, `fuzz` requires `FUZZ_SEED`, and `poc` requires a finding, pinned block, and two authorized RPC endpoints. Use only after the target and environment are authorized. A successful stage is not a security conclusion.
 
 ---
 
@@ -381,3 +393,9 @@ Install in this order, and run `/tool-check` after each step:
 9. Certora or Kontrol: W4, only if licensed
 
 **Status after each install:** A tool is OK only after `/tool-check` records its version in `global/tooling.md`.
+
+## 4. Repository hygiene
+
+- The outer Cantina repository is the tracking boundary. The active package at `security-mesh/security-mesh/` contains no nested `.git` and is tracked directly, not as a submodule; keep the older sibling prototype separate. Other nested repositories are preserved as independent checkouts; do not stage their parent directories or alter their Git metadata without confirming ownership and a canonical remote.
+- Local PostgreSQL clusters under `/data/` and `/security-mesh/data/` are runtime state, not source. Root `.gitignore` excludes both; keep schema, migrations, fixtures, and sanitized dump instructions in source-controlled paths. Do not move or delete a live cluster to clean Git status.
+- Before committing, review only the intended paths with `git diff --cached --check` and `git diff --cached --name-only`. Do not use broad `git add .` in this workspace.

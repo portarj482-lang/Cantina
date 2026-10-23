@@ -43,3 +43,6 @@
 [submodule "v2-gov"]
 	path = bounties/liquity/v2-gov
 	url = https://github.com/liquity/V2-gov.git
+[submodule "base"]
+	path = bounties/base/base
+	url = https://github.com/base/base.git

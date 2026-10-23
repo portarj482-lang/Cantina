@@ -16,3 +16,6 @@
 [submodule "bounties_base_docs"]
 	path = bounties/base/docs
 	url = https://github.com/base/docs.git
+[submodule "ulxly-contracts"]
+	path = bounties/agglayer/ulxly-contracts
+	url = https://github.com/agglayer/ulxly-contracts.git

@@ -17,8 +17,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -55,8 +53,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Setup Node.js & Python
         uses: actions/setup-node@v4
@@ -71,17 +67,9 @@ jobs:
         run: |
           python3 -m pip install -e ".[dev]"
 
-      - name: Install Python Dependencies
-        run: |
-          python3 -m pip install -e ".[dev]"
-
       - name: Run Python Universal Adaptive Test Suite
         run: |
           python3 -m unittest discover -s tests/universal_adaptive
-
-      - name: Lint and Typecheck Python
-        run: |
-          make lint typecheck
 
       - name: Lint and Typecheck Python
         run: |
@@ -101,8 +89,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Execute QRPE Full Pipeline Dry-Run
         run: |

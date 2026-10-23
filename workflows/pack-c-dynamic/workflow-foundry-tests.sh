@@ -139,22 +139,24 @@ ADAPTER="$REPO_ROOT/$ADAPTER_RELATIVE_PATH"
 # and traversal outside the repository, including existing leaf symlink escapes.
 resolve_repo_path() {
   local input="$1"
-  local parent candidate_parent resolved_parent name full_path canonical
+  local parent candidate_parent ancestor resolved_ancestor name canonical
 
   [[ "$input" != /* ]] ||
     fail "Paths must be relative to the repository root: $input"
 
-  # Canonicalize the existing parent so symlinks cannot escape the root.
+  # Canonicalize the nearest existing ancestor so symlinks cannot escape the root.
   parent="$(dirname -- "$input")"
   candidate_parent="$REPO_ROOT/$parent"
 
-  [[ -d "$candidate_parent" ]] ||
-    fail "Parent directory does not exist: $candidate_parent"
+  ancestor="$candidate_parent"
+  while [[ ! -d "$ancestor" && "$ancestor" != "$REPO_ROOT" && "$ancestor" != "/" ]]; do
+    ancestor="$(dirname -- "$ancestor")"
+  done
 
-  resolved_parent="$(cd -P -- "$candidate_parent" 2>/dev/null && pwd -P)" ||
-    fail "Cannot resolve parent directory: $candidate_parent"
+  resolved_ancestor="$(cd -P -- "$ancestor" 2>/dev/null && pwd -P)" ||
+    fail "Cannot resolve ancestor directory: $ancestor"
 
-  case "$resolved_parent" in
+  case "$resolved_ancestor" in
     "$REPO_ROOT"|"$REPO_ROOT"/*) ;;
     *) fail "Path escapes repository root: $input" ;;
   esac
@@ -164,16 +166,8 @@ resolve_repo_path() {
   [[ "$name" != "." && "$name" != ".." && -n "$name" ]] ||
     fail "Invalid path: $input"
 
-  full_path="$resolved_parent/$name"
-
-  # Resolve leaf symlinks whether existing or prospective
-  if [[ -e "$full_path" || -L "$full_path" ]]; then
-    canonical="$(realpath -e -- "$full_path" 2>/dev/null)" ||
-      fail "Cannot resolve target path: $input"
-  else
-    canonical="$(realpath -m -- "$full_path" 2>/dev/null)" ||
-      fail "Cannot resolve path: $input"
-  fi
+  canonical="$(realpath -m -- "$REPO_ROOT/$input" 2>/dev/null)" ||
+    fail "Cannot resolve path: $input"
 
   case "$canonical" in
     "$REPO_ROOT"|"$REPO_ROOT"/*) ;;

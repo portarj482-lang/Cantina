@@ -31,3 +31,6 @@
 [submodule "contracts"]
 	path = bounties/base/contracts
 	url = https://github.com/base/contracts.git
+[submodule "foundry"]
+	path = foundry
+	url = https://github.com/foundry-rs/foundry.git

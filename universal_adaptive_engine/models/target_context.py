@@ -171,19 +171,22 @@ class TargetContextResolver:
         manifests: list[Path] = []
         languages: list[str] = []
         runtimes: list[str] = []
-        architecture = ctx.get("architecture") or os.environ.get("CANTINA_ARCHITECTURE")
+        explicit_architecture = ctx.get("architecture") or os.environ.get("CANTINA_ARCHITECTURE")
+        architecture = explicit_architecture
         capabilities: set[str] = set()
 
         if target_root.exists() and target_root.is_dir():
             # Manifest candidate directories (target_root + immediate non-hidden child directories)
             cand_dirs = [target_root]
             try:
-                for sub in target_root.iterdir():
+                subs = [
+                    sub for sub in target_root.iterdir()
                     if sub.is_dir() and not sub.name.startswith(".") and sub.name not in (
                         "node_modules", "dist", "build", "target", "cache", "out",
                         "snapshots", "logs", "evidence", "findings", "scans", "poc"
-                    ):
-                        cand_dirs.append(sub)
+                    )
+                ]
+                cand_dirs.extend(sorted(subs, key=lambda d: d.name))
             except OSError:
                 pass
 
@@ -277,6 +280,10 @@ class TargetContextResolver:
                     languages.append("move")
                 if not architecture or architecture == "generic":
                     architecture = "move"
+
+        if not explicit_architecture and not target_file:
+            if "solidity" in languages and architecture != "solana":
+                architecture = "evm"
 
         if not architecture:
             architecture = "generic"

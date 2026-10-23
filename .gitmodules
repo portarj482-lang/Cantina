@@ -10,3 +10,6 @@
 [submodule "smart-wallet"]
 	path = bounties/base/smart-wallet
 	url = https://github.com/coinbase/smart-wallet.git
+[submodule "docs"]
+	path = docs
+	url = https://github.com/base/docs.git

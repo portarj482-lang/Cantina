@@ -62,7 +62,7 @@ for dir_pat in "${TARGET_DIRS[@]}"; do
             echo "[REMOVING] Directory: $d"
             rm -rf "$d"
         fi
-    done < <(find . -type d -name "$dir_pat" -not -path "./.git/*" -print0 2>/dev/null)
+    done < <(find . -type d -name "$dir_pat" -not -path "./.git/*" -not -path "./maintenance/*" -print0 2>/dev/null)
 done
 
 for file_pat in "${TARGET_FILES[@]}"; do
@@ -73,7 +73,7 @@ for file_pat in "${TARGET_FILES[@]}"; do
             echo "[REMOVING] File: $f"
             rm -f "$f"
         fi
-    done < <(find . -type f -name "$file_pat" -not -path "./.git/*" -print0 2>/dev/null)
+    done < <(find . -type f -name "$file_pat" -not -path "./.git/*" -not -path "./maintenance/*" -print0 2>/dev/null)
 done
 
 echo "Cleanup scan complete."

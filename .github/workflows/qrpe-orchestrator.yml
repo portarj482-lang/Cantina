@@ -113,6 +113,10 @@ jobs:
         run: |
           git submodule update --init --recursive bounties/base/contracts bounties/base/base bounties/agglayer/ulxly-contracts bounties/agglayer/vault-bridge || true
 
+      - name: Install Python Dependencies
+        run: |
+          python3 -m pip install -e ".[dev]"
+
       - name: Execute QRPE Full Pipeline Dry-Run
         run: |
           ./scripts/run-qrpe-pipeline.sh --dry-run

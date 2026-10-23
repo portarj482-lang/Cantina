@@ -1,78 +1,53 @@
-# Cantina Remediation Handoff Package — Manifest
+# Cantina Remediation Handoff Package — Manifest (Phase 3 Confirmed)
 
 **Date:** 2026-10-22  
 **Target:** `/home/nova/projects/cantina`  
-**Author:** Phase Two Remediator & Release Coordinator  
-**Execution Posture:** All changes staged locally and verified with dry-runs; zero remote push.
+**Author:** Phase Three Executor  
+**Execution Posture:** Batch 1 Executed Locally; Backups Archived; Zero Remote Push.
 
 ---
 
-## Package Contents
+## 1. Batch 1 Executed Submodules & Packages
 
-### 1. Unified Diff Patch
-- `maintenance/reports/handoff_package/unified_remediation.patch`: Comprehensive Git diff covering `.gitignore`, `pyproject.toml`, `requirements.in`, `requirements.txt`, `.github/workflows/ci.yml`, and `.github/workflows/security-mesh-ci.yml`.
-
-### 2. Canonical Action Plans & Reports
-- `maintenance/reports/action_plan_phase2.csv`: Top 30 remediation targets mapped to `path,size_bytes,recommended_action,owner,eta,commands`.
-- `maintenance/reports/action_plan.csv`: Full 38-item prioritized execution ledger.
-- `maintenance/reports/nested_repo_decisions.csv`: Complete inventory of all 31 nested repositories with remote origins and classifications.
-- `maintenance/reports/top200_untracked.csv`: Byte-accurate ranking of top 200 untracked items derived from NUL-stream analysis.
-
-### 3. Executable Automation Tooling (POSIX Shell)
-- `scripts/convert-to-submodule.sh`: Idempotent conversion utility with `--dry-run`, `--confirm`, timestamped backup, and `.gitmodules` registration.
-- `scripts/absorb-nested.sh`: Idempotent package absorption utility with `--dry-run`, `--confirm`, `.git` backup archival, and git staging.
-- `scripts/clean-local.sh`: Workspace cache and transient compiler output purge tool.
-- `Makefile`: Build, test, and audit entrypoints (`make audit`, `make test`, `make dev-install`, `make clean`).
-
-### 4. Governance Policies & Runbooks
-- `maintenance/README.md`: Maintenance directory overview and executive briefing for DevOps Lead.
-- `maintenance/nested-repos-policy.md`: Governance thresholds (>50MB Submodule, <5MB Absorb), submodule lifecycle, and backup protocol.
-- `maintenance/runbook-remediation.md`: Operational step-by-step apply and rollback guide with owner directory.
-- `CONTRIBUTING.md`: Contributor guide for development setup, hygiene gates, and PR requirements.
-- `.pre-commit-config.yaml`: Pre-commit hook definitions blocking secrets, private keys, merge conflicts, and files >50MB.
-
-### 5. Dry-Run Verification Logs
-Logs stored under `maintenance/reports/dryrun-logs/`:
-- `spend-permissions.dryrun.log`
-- `onchainsummer.dryrun.log`
-- `eip-7702-proxy.dryrun.log`
-- `smart-wallet.dryrun.log`
-- `docs.dryrun.log`
-- `base-docs.dryrun.log`
-- `ulxly-contracts.dryrun.log`
-- `uniswap-hooks.dryrun.log`
-- `bold.dryrun.log`
-- `ai-cookbook.dryrun.log`
-- `base-account-privy.dryrun.log`
-- `contract-address-checker.dryrun.log`
-- `transaction-latency.dryrun.log`
-- `base-snapshots-dashboard.dryrun.log`
-- `base-skills.dryrun.log`
-- `clean-local.dryrun.log`
+| Target Path | Category | Commit SHA | Backup Destination | Status |
+|---|---|---|---|---|
+| `base-account-privy` | Monorepo Absorb | `8cae82b` | `maintenance/backups/20261023T062909Z/base-account-privy.git` | **EXECUTED** |
+| `contract-address-checker` | Monorepo Absorb | `12c5de8` | `maintenance/backups/20261023T062914Z/contract-address-checker.git` | **EXECUTED** |
+| `transaction-latency` | Monorepo Absorb | `0ed8382` | `maintenance/backups/20261023T062924Z/transaction-latency.git` | **EXECUTED** |
+| `bounties/base/spend-permissions` | Submodule (1.44 GB) | `00330c4` | `maintenance/backups/20261023T062934Z/spend-permissions.git.bak` | **EXECUTED** |
+| `onchainsummer.xyz` | Submodule (808 MB) | `8dcd5eb` | `maintenance/backups/20261023T063043Z/onchainsummer.xyz.git.bak` | **EXECUTED** |
+| `bounties/base/eip-7702-proxy` | Submodule (488 MB) | `7fbc0c2` | `maintenance/backups/20261023T063051Z/eip-7702-proxy.git.bak` | **EXECUTED** |
+| `bounties/base/smart-wallet` | Submodule (472 MB) | `db59152` | `maintenance/backups/20261023T063102Z/smart-wallet.git.bak` | **EXECUTED** |
+| `docs` | Submodule (472 MB) | `c08992f` | `maintenance/backups/20261023T063129Z/docs.git.bak` | **EXECUTED** |
 
 ---
 
-## Maintainer Local Execution Guide
+## 2. Package Artifacts
 
-```bash
-# 1. Audit repository cleanliness
-make audit
+### A. Unified Diff Patch
+- `maintenance/reports/handoff_package/unified_remediation_confirmed.patch`: Comprehensive Git diff against `2af7ac6` covering all absorbed trees, submodule links, configuration manifests, and CI workflows.
 
-# 2. Run unit tests
-make test
+### B. Canonical Reports & Action Plans
+- `maintenance/reports/action_plan_phase3.csv`: Master 30-item ledger tracking Batch 1, Batch 2, and Batch 3 execution statuses, backups, and rollback hooks.
+- `maintenance/reports/action_plan_phase2.csv`: Phase 2 baseline mapping.
+- `maintenance/reports/nested_repo_decisions.csv`: Complete classification of all 31 nested checkouts.
+- `maintenance/reports/top200_untracked.csv`: Byte-accurate ranking of untracked paths.
 
-# 3. Apply submodule conversion to high-priority targets
-./scripts/convert-to-submodule.sh --confirm bounties/base/spend-permissions
-./scripts/convert-to-submodule.sh --confirm onchainsummer.xyz
-./scripts/convert-to-submodule.sh --confirm bounties/base/eip-7702-proxy
-./scripts/convert-to-submodule.sh --confirm bounties/base/smart-wallet
-./scripts/convert-to-submodule.sh --confirm docs
+### C. Execution & Verification Logs
+- `maintenance/reports/confirm-logs/`: Signed stdout logs for all 8 confirmed operations.
+- `maintenance/reports/dryrun-logs/`: 16 dry-run verification logs.
 
-# 4. Absorb first-party packages
-./scripts/absorb-nested.sh --confirm base-account-privy
-./scripts/absorb-nested.sh --confirm contract-address-checker
-./scripts/absorb-nested.sh --confirm transaction-latency
+### D. Governance & Runbooks
+- `maintenance/README.md`: Overview and executive summary for DevOps Lead.
+- `maintenance/nested-repos-policy.md`: Submodule and absorption thresholds.
+- `maintenance/runbook-remediation.md`: Step-by-step batched apply and rollback procedures.
+- `CONTRIBUTING.md`: PR gating and local developer workflow.
+- `.pre-commit-config.yaml`: Pre-commit hygiene hooks.
 
-# 5. Clean transient cache artifacts
-./scripts/clean-local.sh --confirm
-```
+---
+
+## 3. Verification Summary
+
+- **Tracked Artifact Audit:** `make audit` -> `Audit OK: Zero tracked transient runtime artifacts.`
+- **Unit Test Pass Rate:** `make test` -> `Ran 193 tests in 16.565s — OK.`
+- **Git State:** 8 local commits cleanly staged on `master`; zero commits pushed upstream.

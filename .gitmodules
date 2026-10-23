@@ -55,3 +55,6 @@
 [submodule "openzeppelin-contracts"]
 	path = openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts.git
+[submodule "vault-bridge"]
+	path = bounties/agglayer/vault-bridge
+	url = https://github.com/agglayer/vault-bridge.git

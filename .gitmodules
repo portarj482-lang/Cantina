@@ -28,3 +28,6 @@
 [submodule "ai-cookbook"]
 	path = ai-cookbook
 	url = https://github.com/temporalio/ai-cookbook.git
+[submodule "contracts"]
+	path = bounties/base/contracts
+	url = https://github.com/base/contracts.git

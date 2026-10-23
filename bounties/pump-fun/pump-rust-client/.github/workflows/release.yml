@@ -1,0 +1,170 @@
+name: Release (cargo publish)
+
+# Manually-triggered crate release. Publishes pump-rust-client to crates.io from
+# a chosen branch, gated to the pump-fun/mobile-blockchain team.
+#
+# SECURITY MODEL — read before editing:
+#   Authorization is enforced entirely by the `release` environment's required
+#   reviewers (set to the pump-fun/mobile-blockchain team) in repo Settings.
+#   GitHub checks team membership natively at approval time, so no token or
+#   in-workflow membership check is needed — the repo-scoped GITHUB_TOKEN cannot
+#   read org team membership anyway. An in-workflow `if` check would not be a real
+#   boundary regardless: workflow_dispatch runs the file from the dispatched ref,
+#   so a push-access user could dispatch a modified copy with the check removed.
+#   Publishing uses crates.io Trusted Publishing (OIDC): no long-lived token is
+#   stored anywhere; crates.io mints a short-lived token only for a run bound to
+#   this repo + workflow + the `release` environment. See the `release` job below.
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch (git ref) to release from"
+        required: true
+        type: string
+        default: main
+
+# Least privilege default for GITHUB_TOKEN. The release job overrides this with
+# its own block to add `id-token: write` for crates.io Trusted Publishing.
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # ENFORCED authorization gate. Configure this environment in repo Settings:
+    #   - Required reviewers = pump-fun/mobile-blockchain team
+    # GitHub blocks this job until a team member approves (membership checked
+    # natively — no token needed). Bind the crates.io Trusted Publisher to this
+    # environment so publish authority only exists for an approved run.
+    environment: release
+    # id-token: write lets the job present an OIDC token to crates.io Trusted
+    # Publishing. Job-level block replaces the top-level one, so contents: read
+    # (needed by checkout) is repeated here.
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RUSTFLAGS: "-D warnings"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.branch }}
+          # Full history so the "merged into default branch" check is accurate.
+          fetch-depth: 0
+
+      # Deliberately ref-pinned (not SHA-pinned): dtolnay/rust-toolchain selects
+      # the toolchain FROM the ref name (the `@1.89.0` version branch). A SHA pin
+      # both hides the version and is fragile — version-branch heads get moved and
+      # the old commit can be garbage-collected, breaking resolution. This matches
+      # .github/workflows/ci.yml, which gates every PR with this same ref.
+      - uses: dtolnay/rust-toolchain@1.89.0
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Read crate metadata
+        id: meta
+        run: |
+          set -euo pipefail
+          # Capture into a var (not process substitution) so `set -e` catches a
+          # cargo metadata / jq failure instead of silently yielding empty values.
+          meta=$(cargo metadata --no-deps --format-version 1)
+          name=$(jq -r '.packages[0].name' <<< "$meta")
+          version=$(jq -r '.packages[0].version' <<< "$meta")
+          if [ -z "${name}" ] || [ "${name}" = "null" ] || \
+             [ -z "${version}" ] || [ "${version}" = "null" ]; then
+            echo "::error::Could not read crate name/version from cargo metadata."
+            exit 1
+          fi
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Crate: ${name} ${version}"
+
+      - name: cargo fmt --check
+        run: cargo fmt --all -- --check
+
+      - name: cargo clippy
+        run: cargo clippy --all-targets --no-deps
+
+      - name: cargo test
+        run: cargo test --all-targets
+
+      - name: Warn if release ref is not merged into the default branch
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          set -euo pipefail
+          # Bring origin/<default> into the local repo (checkout fetched only the
+          # release ref). Full history is present via fetch-depth: 0 above.
+          git fetch --no-tags origin \
+            "+refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}" 2>/dev/null || true
+          if git merge-base --is-ancestor HEAD "origin/${DEFAULT_BRANCH}" 2>/dev/null; then
+            echo "Release ref is merged into \`${DEFAULT_BRANCH}\`." >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "> [!WARNING]"
+              echo "> Release ref \`${BRANCH}\` is NOT merged into \`${DEFAULT_BRANCH}\`."
+              echo "> Published crates.io versions are immutable (yank-only); you are shipping unreviewed source."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Guard against re-publishing an existing version
+        env:
+          NAME: ${{ steps.meta.outputs.name }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          echo "Checking crates.io for ${NAME} ${VERSION}..."
+          # crates.io rejects requests without a User-Agent (HTTP 403), so send
+          # one and never infer "not published" from a failed request.
+          http_code=$(curl -sS -o /tmp/versions.json -w '%{http_code}' \
+            -H 'User-Agent: pump-rust-client-release (github-actions; pump-fun/pump-rust-client)' \
+            "https://crates.io/api/v1/crates/${NAME}/versions" || echo "000")
+          if [ "${http_code}" = "404" ]; then
+            echo "Crate ${NAME} not found on crates.io — treating as first publish."
+          elif [ "${http_code}" != "200" ]; then
+            echo "::error::Unexpected HTTP ${http_code} from crates.io versions API; refusing to guess publish state."
+            exit 1
+          elif ! jq -e 'has("versions") and (.versions | type == "array")' /tmp/versions.json >/dev/null 2>&1; then
+            # Fail closed on a 200 with an empty/truncated/schema-changed body, so a
+            # jq parse miss is never mistaken for "version not published".
+            echo "::error::crates.io returned HTTP 200 with an unexpected body; refusing to guess publish state."
+            exit 1
+          elif jq -e --arg v "${VERSION}" '.versions[] | select(.num == $v)' /tmp/versions.json >/dev/null; then
+            echo "::error::${NAME} ${VERSION} is already published on crates.io. Bump the version in Cargo.toml before releasing."
+            exit 1
+          else
+            echo "${NAME} ${VERSION} is not yet on crates.io — OK to publish."
+          fi
+
+      - name: cargo publish --dry-run
+        run: cargo publish --dry-run --locked
+
+      # --- Publish via crates.io Trusted Publishing (OIDC) ---
+      # No stored token. This step exchanges the job's OIDC identity for a
+      # short-lived crates.io token. Requires a Trusted Publisher configured on
+      # crates.io for pump-rust-client, bound to repo pump-fun/pump-rust-client,
+      # workflow release.yml, environment release.
+      - name: Authenticate to crates.io (Trusted Publishing)
+        id: auth
+        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
+
+      - name: cargo publish
+        env:
+          # Short-lived token minted by the auth step above — not a stored secret.
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+          NAME: ${{ steps.meta.outputs.name }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          cargo publish --locked
+          echo "✅ Published ${NAME} ${VERSION} to crates.io" >> "$GITHUB_STEP_SUMMARY"

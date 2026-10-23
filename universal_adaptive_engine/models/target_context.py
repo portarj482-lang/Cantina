@@ -247,7 +247,7 @@ class TargetContextResolver:
                     if "cargo" not in runtimes:
                         runtimes.append("cargo")
                     capabilities.update(["rust.cargo", "tests.cargo"])
-                    if (cand / "idls").exists() or (cand / "keys").exists() or "solana" in cand.name.lower() or "pump" in cand.name.lower():
+                    if (cand / "idls").exists() or (cand / "idl").exists() or (cand / "keys").exists() or "solana" in cand.name.lower() or "pump" in cand.name.lower():
                         capabilities.update(["solana.program", "programs.solana"])
                         if not architecture:
                             architecture = "solana"

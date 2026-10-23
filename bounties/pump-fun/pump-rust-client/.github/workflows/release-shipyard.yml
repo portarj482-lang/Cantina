@@ -1,0 +1,168 @@
+name: Release (Shipyard)
+
+# Manually-triggered crate release to the private Shipyard registry, for
+# partners (e.g. the Jupiter team) who should get the crate before or instead of
+# a crates.io release. Publishes pump-rust-client from a chosen branch.
+#
+# SECURITY MODEL — same shape as release.yml:
+#   Authorization is enforced by the `shipyard` environment's required reviewers
+#   in repo Settings; GitHub blocks the job until a reviewer approves. Shipyard
+#   has no OIDC trusted publishing, so two environment secrets do the work and
+#   only an approved run can read them:
+#     SHIPYARD_SSH_KEY  private key whose public half is registered on Shipyard
+#                       ("Add SSH Public Key"); the crate index is a git repo
+#                       reached over SSH, and Cargo needs it to publish.
+#     SHIPYARD_TOKEN    a Shipyard token (Tokens page) used for the publish API.
+#   Nothing else is stored; the index URL below is org-specific but not secret.
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch (git ref) to release from"
+        required: true
+        type: string
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-shipyard-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  # Shipyard org `baton-corporation`. Cargo reads an alternate registry's index
+  # and token from `CARGO_REGISTRIES_<NAME>_*`, so no config file is written;
+  # the registry is called `shipyard` inside this job only.
+  CARGO_REGISTRIES_SHIPYARD_INDEX: ssh://git@ssh.shipyard.rs/baton-corporation-cf537ec2/crate-index.git
+  # Use the git CLI (which honours GIT_SSH_COMMAND and known_hosts) for the
+  # index clone instead of libgit2, as Shipyard recommends.
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # ENFORCED authorization gate. Configure this environment in repo Settings:
+    #   - Required reviewers = the team allowed to ship partner releases
+    #   - Secrets SHIPYARD_SSH_KEY and SHIPYARD_TOKEN
+    environment: shipyard
+    env:
+      RUSTFLAGS: "-D warnings"
+      CARGO_REGISTRIES_SHIPYARD_TOKEN: ${{ secrets.SHIPYARD_TOKEN }}
+    steps:
+      - name: Configure SSH access to the Shipyard crate index
+        env:
+          SHIPYARD_SSH_KEY: ${{ secrets.SHIPYARD_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SHIPYARD_SSH_KEY}" ]; then
+            echo "::error::Environment secret SHIPYARD_SSH_KEY is not set on the 'shipyard' environment."
+            exit 1
+          fi
+          if [ -z "${CARGO_REGISTRIES_SHIPYARD_TOKEN}" ]; then
+            echo "::error::Environment secret SHIPYARD_TOKEN is not set on the 'shipyard' environment."
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${SHIPYARD_SSH_KEY}" > ~/.ssh/shipyard
+          chmod 600 ~/.ssh/shipyard
+          ssh-keyscan -H ssh.shipyard.rs >> ~/.ssh/known_hosts 2>/dev/null
+          echo "GIT_SSH_COMMAND=ssh -i ~/.ssh/shipyard -o IdentitiesOnly=yes" >> "$GITHUB_ENV"
+          ssh -i ~/.ssh/shipyard -o IdentitiesOnly=yes -T git@ssh.shipyard.rs 2>&1 | head -3 || true
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+
+      # Ref-pinned on purpose; see release.yml for why.
+      - uses: dtolnay/rust-toolchain@1.89.0
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Read crate metadata
+        id: meta
+        run: |
+          set -euo pipefail
+          meta=$(cargo metadata --no-deps --format-version 1)
+          name=$(jq -r '.packages[0].name' <<< "$meta")
+          version=$(jq -r '.packages[0].version' <<< "$meta")
+          if [ -z "${name}" ] || [ "${name}" = "null" ] || \
+             [ -z "${version}" ] || [ "${version}" = "null" ]; then
+            echo "::error::Could not read crate name/version from cargo metadata."
+            exit 1
+          fi
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Crate: ${name} ${version}"
+
+      - name: cargo fmt --check
+        run: cargo fmt --all -- --check
+
+      - name: cargo clippy
+        run: cargo clippy --all-targets --no-deps
+
+      - name: cargo test
+        run: cargo test --all-targets
+
+      - name: Warn if release ref is not merged into the default branch
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin \
+            "+refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}" 2>/dev/null || true
+          if git merge-base --is-ancestor HEAD "origin/${DEFAULT_BRANCH}" 2>/dev/null; then
+            echo "Release ref is merged into \`${DEFAULT_BRANCH}\`." >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "> [!WARNING]"
+              echo "> Release ref \`${BRANCH}\` is NOT merged into \`${DEFAULT_BRANCH}\`."
+              echo "> Shipyard versions are immutable (yank-only); you are shipping unreviewed source."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Guard against re-publishing an existing version
+        env:
+          NAME: ${{ steps.meta.outputs.name }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          # The index is a git repo: one file per crate at
+          # <first two>/<next two>/<name>, one JSON line per published version.
+          git clone --quiet --depth 1 "${CARGO_REGISTRIES_SHIPYARD_INDEX}" /tmp/crate-index
+          path="/tmp/crate-index/${NAME:0:2}/${NAME:2:2}/${NAME}"
+          if [ ! -f "${path}" ]; then
+            echo "Crate ${NAME} not found on Shipyard — treating as first publish."
+          elif ! jq -e -s 'all(.[]; has("vers"))' "${path}" >/dev/null 2>&1; then
+            echo "::error::Unexpected index entry for ${NAME}; refusing to guess publish state."
+            exit 1
+          elif jq -e -s --arg v "${VERSION}" 'any(.[]; .vers == $v)' "${path}" >/dev/null; then
+            echo "::error::${NAME} ${VERSION} is already published on Shipyard. Bump the version in Cargo.toml before releasing."
+            exit 1
+          else
+            echo "${NAME} ${VERSION} is not yet on Shipyard — OK to publish."
+          fi
+          rm -rf /tmp/crate-index
+
+      - name: cargo publish --dry-run
+        run: cargo publish --registry shipyard --dry-run --locked
+
+      - name: cargo publish
+        env:
+          NAME: ${{ steps.meta.outputs.name }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          cargo publish --registry shipyard --locked
+          {
+            echo "✅ Published ${NAME} ${VERSION} to Shipyard (baton-corporation)."
+            echo ""
+            echo "Consumers: see the Releases section of the README for the registry config;"
+            echo "depend on \`${NAME} = { version = \"${VERSION}\", registry = \"baton-corporation\" }\`."
+          } >> "$GITHUB_STEP_SUMMARY"

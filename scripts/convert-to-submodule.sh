@@ -44,6 +44,9 @@ if [ ! -d "$TARGET_PATH/.git" ] && [ ! -f "$TARGET_PATH/.git" ]; then
 fi
 
 NAME=$(basename "$TARGET_PATH")
+if [ -f .gitmodules ] && git config -f .gitmodules --get "submodule.$NAME.url" >/dev/null 2>&1; then
+    NAME=$(echo "$TARGET_PATH" | sed 's|^[./]*||; s|[^a-zA-Z0-9._-]|_|g')
+fi
 REMOTE_URL=$(git -C "$TARGET_PATH" remote get-url origin 2>/dev/null || echo "")
 
 if [ -z "$REMOTE_URL" ]; then

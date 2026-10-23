@@ -1,0 +1,13 @@
+=== Submodule Conversion Plan ===
+Target:      bounties/base/eip-7702-proxy
+Submodule:   eip-7702-proxy
+Remote URL:  https://github.com/base/eip-7702-proxy.git
+Backup Dest: maintenance/backups/20261023T061043Z/eip-7702-proxy.git.bak
+
+[MODE] DRY RUN ONLY. No changes made.
+Commands that will run with --confirm:
+  mkdir -p "maintenance/backups/20261023T061043Z"
+  cp -r "bounties/base/eip-7702-proxy/.git" "maintenance/backups/20261023T061043Z/eip-7702-proxy.git.bak"
+  rm -rf "bounties/base/eip-7702-proxy/.git"
+  git submodule add --name "eip-7702-proxy" "https://github.com/base/eip-7702-proxy.git" "bounties/base/eip-7702-proxy"
+  git commit -m "chore(submodules): register bounties/base/eip-7702-proxy as git submodule"

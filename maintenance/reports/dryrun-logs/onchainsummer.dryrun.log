@@ -1,0 +1,13 @@
+=== Submodule Conversion Plan ===
+Target:      onchainsummer.xyz
+Submodule:   onchainsummer.xyz
+Remote URL:  https://github.com/base/onchainsummer.xyz.git
+Backup Dest: maintenance/backups/20261023T061043Z/onchainsummer.xyz.git.bak
+
+[MODE] DRY RUN ONLY. No changes made.
+Commands that will run with --confirm:
+  mkdir -p "maintenance/backups/20261023T061043Z"
+  cp -r "onchainsummer.xyz/.git" "maintenance/backups/20261023T061043Z/onchainsummer.xyz.git.bak"
+  rm -rf "onchainsummer.xyz/.git"
+  git submodule add --name "onchainsummer.xyz" "https://github.com/base/onchainsummer.xyz.git" "onchainsummer.xyz"
+  git commit -m "chore(submodules): register onchainsummer.xyz as git submodule"

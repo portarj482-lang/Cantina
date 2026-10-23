@@ -1,0 +1,13 @@
+=== Submodule Conversion Plan ===
+Target:      bounties/agglayer/ulxly-contracts
+Submodule:   ulxly-contracts
+Remote URL:  https://github.com/agglayer/ulxly-contracts.git
+Backup Dest: maintenance/backups/20261023T061043Z/ulxly-contracts.git.bak
+
+[MODE] DRY RUN ONLY. No changes made.
+Commands that will run with --confirm:
+  mkdir -p "maintenance/backups/20261023T061043Z"
+  cp -r "bounties/agglayer/ulxly-contracts/.git" "maintenance/backups/20261023T061043Z/ulxly-contracts.git.bak"
+  rm -rf "bounties/agglayer/ulxly-contracts/.git"
+  git submodule add --name "ulxly-contracts" "https://github.com/agglayer/ulxly-contracts.git" "bounties/agglayer/ulxly-contracts"
+  git commit -m "chore(submodules): register bounties/agglayer/ulxly-contracts as git submodule"

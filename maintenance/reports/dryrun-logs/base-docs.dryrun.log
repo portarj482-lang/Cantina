@@ -1,0 +1,13 @@
+=== Submodule Conversion Plan ===
+Target:      bounties/base/docs
+Submodule:   docs
+Remote URL:  https://github.com/base/docs.git
+Backup Dest: maintenance/backups/20261023T061043Z/docs.git.bak
+
+[MODE] DRY RUN ONLY. No changes made.
+Commands that will run with --confirm:
+  mkdir -p "maintenance/backups/20261023T061043Z"
+  cp -r "bounties/base/docs/.git" "maintenance/backups/20261023T061043Z/docs.git.bak"
+  rm -rf "bounties/base/docs/.git"
+  git submodule add --name "docs" "https://github.com/base/docs.git" "bounties/base/docs"
+  git commit -m "chore(submodules): register bounties/base/docs as git submodule"

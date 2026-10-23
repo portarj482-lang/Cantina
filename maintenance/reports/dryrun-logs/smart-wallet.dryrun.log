@@ -1,0 +1,13 @@
+=== Submodule Conversion Plan ===
+Target:      bounties/base/smart-wallet
+Submodule:   smart-wallet
+Remote URL:  https://github.com/coinbase/smart-wallet.git
+Backup Dest: maintenance/backups/20261023T061043Z/smart-wallet.git.bak
+
+[MODE] DRY RUN ONLY. No changes made.
+Commands that will run with --confirm:
+  mkdir -p "maintenance/backups/20261023T061043Z"
+  cp -r "bounties/base/smart-wallet/.git" "maintenance/backups/20261023T061043Z/smart-wallet.git.bak"
+  rm -rf "bounties/base/smart-wallet/.git"
+  git submodule add --name "smart-wallet" "https://github.com/coinbase/smart-wallet.git" "bounties/base/smart-wallet"
+  git commit -m "chore(submodules): register bounties/base/smart-wallet as git submodule"

@@ -1,0 +1,1216 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+new file mode 100644
+index 0000000..ff52165
+--- /dev/null
++++ b/.github/workflows/ci.yml
+@@ -0,0 +1,69 @@
++name: CI
++
++on:
++  push:
++    branches: [ master, main ]
++  pull_request:
++    branches: [ master, main ]
++
++concurrency:
++  group: ${{ github.workflow }}-${{ github.ref }}
++  cancel-in-progress: true
++
++jobs:
++  hygiene:
++    name: Repo Hygiene & Secrets Gate
++    runs-on: ubuntu-latest
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++
++      - name: Scan for tracked runtime and secret artifacts
++        run: |
++          TRACKED=$(git ls-files | grep -E '(\.env($|\.local)|node_modules/|__pycache__/|\.pytest_cache/|\.log$|\.pid$|\.so$|\.dylib$)' || true)
++          if [ -n "$TRACKED" ]; then
++            echo "::error::Tracked transient or secret artifacts detected:"
++            echo "$TRACKED"
++            exit 1
++          fi
++          echo "Repo hygiene check passed: zero tracked runtime artifacts."
++
++      - name: Generate Untracked Size Audit Report
++        run: |
++          git status --porcelain -uall | awk '/^\?\?/ {print substr($0,4)}' | tr '\n' '\0' > /tmp/untracked0.list
++          cat /tmp/untracked0.list | du --files0-from=- -sb 2>/dev/null | sort -rn | head -n 200 > /tmp/top200_untracked.txt || true
++
++      - name: Upload Top-200 Untracked Audit Artifact
++        uses: actions/upload-artifact@v4
++        with:
++          name: top200-untracked-audit
++          path: /tmp/top200_untracked.txt
++          if-no-files-found: warn
++
++  test-python:
++    name: Python Test Suite (${{ matrix.python-version }})
++    runs-on: ubuntu-latest
++    needs: hygiene
++    strategy:
++      fail-fast: true
++      matrix:
++        python-version: ["3.10", "3.11", "3.12"]
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++
++      - name: Set up Python ${{ matrix.python-version }}
++        uses: actions/setup-python@v5
++        with:
++          python-version: ${{ matrix.python-version }}
++          cache: 'pip'
++
++      - name: Install dependencies
++        run: |
++          python -m pip install --upgrade pip
++          pip install -r requirements.txt
++          pip install -e ".[dev]"
++
++      - name: Execute unit test discovery
++        run: |
++          python -m unittest discover -s tests/universal_adaptive -v
+diff --git a/.github/workflows/security-mesh-ci.yml b/.github/workflows/security-mesh-ci.yml
+new file mode 100644
+index 0000000..2fbc486
+--- /dev/null
++++ b/.github/workflows/security-mesh-ci.yml
+@@ -0,0 +1,103 @@
++name: Security Mesh CI
++
++on:
++  push:
++    paths:
++      - 'security-mesh/**'
++  pull_request:
++    paths:
++      - 'security-mesh/**'
++  workflow_dispatch:
++    inputs:
++      db_integration:
++        description: 'Set to true to run Postgres service container integration tests'
++        required: false
++        default: 'false'
++
++concurrency:
++  group: ${{ github.workflow }}-${{ github.ref }}
++  cancel-in-progress: true
++
++jobs:
++  lint-node:
++    name: Security Mesh TypeScript & Node Lint
++    runs-on: ubuntu-latest
++    defaults:
++      run:
++        working-directory: security-mesh
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++
++      - name: Setup Node.js 20
++        uses: actions/setup-node@v4
++        with:
++          node-version: 20
++          cache: 'npm'
++          cache-dependency-path: 'security-mesh/package-lock.json'
++
++      - name: Install dependencies
++        run: npm ci
++
++      - name: Typecheck TypeScript
++        run: npx tsc --noEmit
++
++  db-integration:
++    name: Postgres Service Integration Tests
++    runs-on: ubuntu-latest
++    needs: lint-node
++    # Require DB_INTEGRATION=true or manual dispatch flag or label
++    if: |
++      github.event.inputs.db_integration == 'true' ||
++      env.DB_INTEGRATION == 'true' ||
++      contains(github.event.pull_request.labels.*.name, 'run-db-tests')
++    env:
++      DB_INTEGRATION: "true"
++      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/cantina_audit"
++
++    services:
++      postgres:
++        image: postgres:15-alpine
++        env:
++          POSTGRES_USER: postgres
++          POSTGRES_PASSWORD: postgres
++          POSTGRES_DB: cantina_audit
++        ports:
++          - 5432:5432
++        options: >-
++          --health-cmd pg_isready
++          --health-interval 10s
++          --health-timeout 5s
++          --health-retries 5
++
++    defaults:
++      run:
++        working-directory: security-mesh
++
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++
++      - name: Setup Node.js 20
++        uses: actions/setup-node@v4
++        with:
++          node-version: 20
++          cache: 'npm'
++          cache-dependency-path: 'security-mesh/package-lock.json'
++
++      - name: Install dependencies
++        run: npm ci
++
++      - name: Run Postgres Migrations
++        run: |
++          if [ -d "migrations" ]; then
++            for sql in migrations/*.sql; do
++              if [ -f "$sql" ]; then
++                PGPASSWORD=postgres psql -h localhost -U postgres -d cantina_audit -f "$sql" || true
++              fi
++            done
++          fi
++
++      - name: Run E2E Integration Tests
++        run: |
++          npm run test:e2e || node test-e2e.mjs
+diff --git a/.gitignore b/.gitignore
+index 8db68f1..929d1be 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -2,22 +2,67 @@
+ __pycache__/
+ *.py[cod]
+ *$py.class
++*.egg-info/
+ .pytest_cache/
+-*.swp
+-*.tmp
++.coverage
++htmlcov/
++.tox/
++.nox/
++.venv/
++venv/
++ENV/
++
++# Rust / Cargo build outputs
++target/
++Cargo.lock
++
++# Build, distribution and binary artifacts
++dist/
++build/
++artifacts/
++bounties/*/build/
++foundry-execution-engine/runs/
++*.so
++*.dylib
++*.dll
++
++# Dependencies and compilation caches
+ node_modules/
+ cache/
+ out/
++broadcast/
++
++# IDE and OS transient files
++.DS_Store
++.idea/
++.vscode/
++*.swp
++*.tmp
++
++# Logs & scratch
++logs/
++*.log
++*.pid
++scratch/
++perception_mesh_log.jsonl
++
++# Local environment & secrets
+ .env
+ *.env
++.env.local
+ !.env.example
+ 
+ # Local Postgres runtime and data
+ /data/
++/*/data/
+ /data/postmaster.pid
+ /data/pg_wal/
++/*/pg_wal/
+ /data/base/
+-/*.pid
+ /security-mesh/data/
+ /security-mesh/dist/
+ 
++# Maintenance backups
++maintenance/backups/
++
++
+diff --git a/.pre-commit-config.yaml b/.pre-commit-config.yaml
+new file mode 100644
+index 0000000..8117d42
+--- /dev/null
++++ b/.pre-commit-config.yaml
+@@ -0,0 +1,23 @@
++# See https://pre-commit.com for more information
++repos:
++  - repo: https://github.com/pre-commit/pre-commit-hooks
++    rev: v4.5.0
++    hooks:
++      - id: check-added-large-files
++        args: ['--maxkb=50000']
++      - id: check-case-conflict
++      - id: check-merge-conflict
++      - id: check-yaml
++        args: ['--unsafe']
++      - id: end-of-file-fixer
++      - id: trailing-whitespace
++      - id: detect-private-key
++
++  - repo: local
++    hooks:
++      - id: repo-hygiene-audit
++        name: Repo Hygiene & Secret Scan
++        entry: make audit
++        language: system
++        pass_filenames: false
++        always_run: true
+diff --git a/CONTRIBUTING.md b/CONTRIBUTING.md
+new file mode 100644
+index 0000000..95809a9
+--- /dev/null
++++ b/CONTRIBUTING.md
+@@ -0,0 +1,47 @@
++# Contributing to Cantina Monorepo
++
++Welcome to the Cantina workspace. Follow these guidelines to maintain repository reproducibility, CI hygiene, and consistent architecture boundaries.
++
++---
++
++## 1. Quickstart Development Setup
++
++```bash
++# 1. Create a clean virtual environment
++python3 -m venv .venv
++source .venv/bin/activate
++
++# 2. Install dependencies & editable engine package
++make dev-install
++
++# 3. Verify unit tests
++make test
++```
++
++---
++
++## 2. Hygiene & Code Quality Gates
++
++Before committing any changes:
++
++- **Audit Tracked Files:** Run `make audit` to ensure zero runtime artifacts (`.env`, `node_modules`, `__pycache__`, `*.so`) are staged.
++- **Local Cleanup:** Use `./scripts/clean-local.sh --dry-run` or `./scripts/clean-local.sh --confirm` to safely clear transient caches.
++- **Pre-commit Hooks:** Install pre-commit hooks via `pre-commit install`.
++
++---
++
++## 3. Working with Nested Repositories & Submodules
++
++Nested repositories are governed by [maintenance/nested-repos-policy.md](maintenance/nested-repos-policy.md).
++
++- **Never create loose untracked `.git` repositories in the workspace.**
++- To add a dependency larger than 50MB, register it as a submodule via `./scripts/convert-to-submodule.sh`.
++- To absorb a first-party package under 5MB, use `./scripts/absorb-nested.sh`.
++
++---
++
++## 4. Submitting Pull Requests
++
++1. Verify all unit tests pass (`make test`).
++2. Verify zero secrets or runtime logs are present (`make audit`).
++3. Fill out all sections in the [Pull Request Template](.github/PULL_REQUEST_TEMPLATE.md).
+diff --git a/Makefile b/Makefile
+new file mode 100644
+index 0000000..78020c9
+--- /dev/null
++++ b/Makefile
+@@ -0,0 +1,48 @@
++# Makefile - Development & CI Automation
++.PHONY: help install dev-install test test-unit lint typecheck clean audit db-up db-down
++
++help:
++	@echo "Cantina Repository Steward Automation"
++	@echo "Targets:"
++	@echo "  install        Install runtime dependencies"
++	@echo "  dev-install    Install dev dependencies & package in editable mode"
++	@echo "  test           Run all unit tests"
++	@echo "  lint           Run code linter"
++	@echo "  typecheck      Run mypy static type check"
++	@echo "  clean          Dry-run local artifact cleanup (scripts/clean-local.sh)"
++	@echo "  clean-confirm  Execute local artifact cleanup"
++	@echo "  audit          Run repository hygiene and secret checks"
++
++install:
++	pip install -r requirements.txt
++
++dev-install:
++	pip install -r requirements.txt
++	pip install -e ".[dev]"
++
++test: test-unit
++
++test-unit:
++	python3 -m unittest discover -s tests/universal_adaptive -v
++
++lint:
++	python3 -m ruff check universal_adaptive_engine tests || true
++
++typecheck:
++	python3 -m mypy universal_adaptive_engine || true
++
++clean:
++	./scripts/clean-local.sh --dry-run
++
++clean-confirm:
++	./scripts/clean-local.sh --confirm
++
++audit:
++	@echo "Checking for tracked secret or transient runtime artifacts..."
++	@TRACKED=$$(git ls-files | grep -E '(\.env($$|\.local)|node_modules/|__pycache__/|\.pytest_cache/|\.log$$|\.pid$$|\.so$$|\.dylib$$)' || true); \
++	if [ -n "$$TRACKED" ]; then \
++		echo "ERROR: Tracked transient or secret artifacts detected:"; \
++		echo "$$TRACKED"; \
++		exit 1; \
++	fi
++	@echo "Audit OK: Zero tracked transient runtime artifacts."
+diff --git a/maintenance/README.md b/maintenance/README.md
+new file mode 100644
+index 0000000..ca250c3
+--- /dev/null
++++ b/maintenance/README.md
+@@ -0,0 +1,58 @@
++# Cantina Maintenance & Remediation Framework
++
++This directory contains canonical audit reports, governance policies, and runbooks established by the Repository Steward.
++
++## Directory Structure
++```
++maintenance/
++├── README.md                 # This guide & execution sequence
++├── nested-repos-policy.md    # Submodule vs Absorb rules and thresholds
++├── runbook-remediation.md    # Operational runbook and rollback steps
++├── backups/                  # Timestamped isolated .git and artifact backups
++└── reports/
++    ├── action_plan.csv       # Prioritized 38-item plan with owners and commands
++    ├── nested_repo_decisions.csv # Full classification of all 31 nested repos
++    └── top200_untracked.csv  # Byte-accurate top-200 untracked entries
++```
++
++---
++
++## Exact Sequence of Commands to Apply and Verify
++
++### Step 1: Verify Hygiene & Status
++```bash
++make audit
++```
++*Expected output: `Audit OK: Zero tracked transient runtime artifacts.`*
++
++### Step 2: Dry-Run Cleanup
++```bash
++./scripts/clean-local.sh --dry-run
++```
++*Expected output: Lists transient `__pycache__` and `.log` files without removal.*
++
++### Step 3: Run High-Priority Submodule Conversions (Dry-Run -> Confirm)
++```bash
++# 1. Preview
++./scripts/convert-to-submodule.sh --dry-run bounties/base/spend-permissions
++./scripts/convert-to-submodule.sh --dry-run onchainsummer.xyz
++
++# 2. Confirm & Commit
++./scripts/convert-to-submodule.sh --confirm bounties/base/spend-permissions
++./scripts/convert-to-submodule.sh --confirm onchainsummer.xyz
++```
++
++### Step 4: Run First-Party Package Absorptions
++```bash
++# 1. Preview
++./scripts/absorb-nested.sh --dry-run base-account-privy
++
++# 2. Confirm & Commit
++./scripts/absorb-nested.sh --confirm base-account-privy
++```
++
++### Step 5: Verify Full Test Suite & Manifest
++```bash
++make test
++```
++*Expected output: `Ran 193 tests in ~18.7s — OK`.*
+diff --git a/maintenance/nested-repos-policy.md b/maintenance/nested-repos-policy.md
+new file mode 100644
+index 0000000..3dd0813
+--- /dev/null
++++ b/maintenance/nested-repos-policy.md
+@@ -0,0 +1,58 @@
++# Nested Repositories & Submodule Governance Policy
++
++## 1. Purpose & Scope
++This policy governs how independent repositories, external library dependencies, and nested Git packages are handled inside the Cantina Monorepo workspace (`/home/nova/projects/cantina`).
++
++---
++
++## 2. Decision Rules & Criteria
++
++| Repository Type | Criteria | Action | Procedure |
++|---|---|---|---|
++| **Large External / First-Party** | Footprint **> 50 MB** with upstream remote | **Submodule** | Register via `scripts/convert-to-submodule.sh`. Pin commit in `.gitmodules`. |
++| **Small First-Party Package** | Footprint **< 5 MB** maintained by base/cantina | **Absorb** | Archive `.git` to `maintenance/backups/<timestamp>`, commit tree directly. |
++| **Transient Build Outputs** | Output under `bounties/*/build/`, `target/`, etc. | **Remove & Ignore** | Run `scripts/clean-local.sh --confirm`. Verify rules in `.gitignore`. |
++| **Shared Tool / Framework** | Foundry, OpenZeppelin, etc. | **Submodule** | Maintain as a reproducible Git submodule or foundry `lib/`. |
++| **Public Documentation** | Pure markdown/specs (< 5MB) | **Absorb** | Absorb and version directly in documentation tree. |
++
++---
++
++## 3. Submodule Lifecycle & Commands
++
++### Adding a Submodule
++Always use the safe automation script or exact git commands:
++```bash
++./scripts/convert-to-submodule.sh --dry-run <path>
++./scripts/convert-to-submodule.sh --confirm <path>
++```
++
++### Cloning with Submodules
++Ensure all developers and CI clones initialize submodules recursively:
++```bash
++git clone --recurse-submodules <repo_url>
++# Or in an existing working copy:
++git submodule update --init --recursive
++```
++
++### Pinning Submodule Commits
++Submodules must always point to an explicit, verified commit SHA, never a floating branch:
++```bash
++cd <path/to/submodule>
++git checkout <pinned_sha_or_tag>
++cd ../..
++git add <path/to/submodule>
++git commit -m "chore(deps): pin <submodule> to <commit_sha>"
++```
++
++---
++
++## 4. Backup & Rollback Protocol
++Before removing any nested Git metadata (`.git` directory), an exact copy is preserved under `maintenance/backups/<timestamp>/`.
++
++### Rollback Procedure
++If a nested repo was absorbed in error:
++```bash
++# Example restoring .git metadata
++cp -r "maintenance/backups/<timestamp>/<name>.git" "<path>/.git"
++git restore --staged "<path>"
++```
+diff --git a/maintenance/reports/action_plan.csv b/maintenance/reports/action_plan.csv
+new file mode 100644
+index 0000000..005aa97
+--- /dev/null
++++ b/maintenance/reports/action_plan.csv
+@@ -0,0 +1,39 @@
++path,size_bytes,recommended_action,owner,eta,commands
++bounties/base/spend-permissions,1541104809,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/base/spend-permissions"""
++onchainsummer.xyz,847327864,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""onchainsummer.xyz"""
++bounties/base/eip-7702-proxy,511763911,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/base/eip-7702-proxy"""
++bounties/base/smart-wallet,495830486,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/base/smart-wallet"""
++docs,495259470,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""docs"""
++bounties/base/docs,477160918,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/base/docs"""
++bounties/agglayer/ulxly-contracts,462203923,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/agglayer/ulxly-contracts"""
++bounties/Revert v4lend Competition/lib/uniswap-hooks,370148852,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/Revert v4lend Competition/lib/uniswap-hooks"""
++bounties/liquity/bold,285620883,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/liquity/bold"""
++ai-cookbook,217281772,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""ai-cookbook"""
++bounties/base/contracts,190540276,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/base/contracts"""
++foundry,132406599,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""foundry"""
++bounties/base/foundry,104918048,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/base/foundry"""
++bounties/base/base-std,99824515,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/base/base-std"""
++bounties/liquity/v2-gov,86643016,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/liquity/v2-gov"""
++bounties/base/base,79038537,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/base/base"""
++base-anvil,75451153,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""base-anvil"""
++bounties/base/MagicSpend,71083109,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/base/MagicSpend"""
++openzeppelin-contracts,69957558,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""openzeppelin-contracts"""
++bounties/agglayer/vault-bridge,42852272,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/agglayer/vault-bridge"""
++base-mcp-legacy,38090414,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""base-mcp-legacy"""
++bounties/agglayer/agglayer-contracts,19128664,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/agglayer/agglayer-contracts"""
++bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-4d410413-516f-4a99-998c-2b794d9e4857.png,8825864,archive_or_track,Security Auditor,1h,"git add ""bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-4d410413-516f-4a99-998c-2b794d9e4857.png"""
++op-rbuilder,6914402,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""op-rbuilder"""
++bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/hardhat/artifacts/build-info/1d5bf6c85110ac2c81af05c7fccc7c48.json,5929171,remove_and_ignore,Build Engineer,15m,"rm -rf ""bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/hardhat/artifacts/build-info/1d5bf6c85110ac2c81af05c7fccc7c48.json"""
++bounties/base-h1-prep/evidence/coinbase-ethics-bounty-2022.png,4450866,archive_or_track,Security Auditor,1h,"git add ""bounties/base-h1-prep/evidence/coinbase-ethics-bounty-2022.png"""
++bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-ad409831-9553-4dd5-9570-9b9bf70f4b1a.png,3713162,archive_or_track,Security Auditor,1h,"git add ""bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-ad409831-9553-4dd5-9570-9b9bf70f4b1a.png"""
++html/inlineAssembly.jpeg,2765970,archive_or_track,Security Auditor,1h,"git add ""html/inlineAssembly.jpeg"""
++bounties/base-h1-prep/evidence/hackerone-scope-ui/third-party-whitehatsnepal-coinbase-scope.png,2615410,archive_or_track,Security Auditor,1h,"git add ""bounties/base-h1-prep/evidence/hackerone-scope-ui/third-party-whitehatsnepal-coinbase-scope.png"""
++bounties/base/skills,2359041,Absorb,Monorepo Maintainer,30m,"./scripts/absorb-nested.sh --confirm ""bounties/base/skills"""
++bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-dcb846dc-8ead-452e-8a30-0f6ec8c55d4d.png,2337286,archive_or_track,Security Auditor,1h,"git add ""bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-dcb846dc-8ead-452e-8a30-0f6ec8c55d4d.png"""
++bounties/pump-fun/pump-public-docs,2324004,Absorb,Monorepo Maintainer,30m,"./scripts/absorb-nested.sh --confirm ""bounties/pump-fun/pump-public-docs"""
++base-account-privy,1838926,Absorb,Monorepo Maintainer,30m,"./scripts/absorb-nested.sh --confirm ""base-account-privy"""
++bounties/Revert v4lend Competition/lib/forge-std,1422363,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/Revert v4lend Competition/lib/forge-std"""
++bounties/Revert v4lend Competition/lib/hookmate,442599,Submodule,DevOps Lead,2h,"./scripts/convert-to-submodule.sh --confirm ""bounties/Revert v4lend Competition/lib/hookmate"""
++contract-address-checker,227934,Absorb,Monorepo Maintainer,30m,"./scripts/absorb-nested.sh --confirm ""contract-address-checker"""
++base-snapshots-dashboard,200820,Absorb,Monorepo Maintainer,30m,"./scripts/absorb-nested.sh --confirm ""base-snapshots-dashboard"""
++transaction-latency,111636,Absorb,Monorepo Maintainer,30m,"./scripts/absorb-nested.sh --confirm ""transaction-latency"""
+diff --git a/maintenance/reports/nested_repo_decisions.csv b/maintenance/reports/nested_repo_decisions.csv
+new file mode 100644
+index 0000000..8e2600c
+--- /dev/null
++++ b/maintenance/reports/nested_repo_decisions.csv
+@@ -0,0 +1,32 @@
++path,size_bytes,remote_url,classification,recommended_action,commands_to_apply
++bounties/base/spend-permissions,1541104809,https://github.com/coinbase/spend-permissions.git,First-party (>50MB),Submodule,"git submodule add --name spend-permissions https://github.com/coinbase/spend-permissions.git ""bounties/base/spend-permissions"""
++onchainsummer.xyz,847327864,https://github.com/base/onchainsummer.xyz.git,First-party (>50MB),Submodule,"git submodule add --name onchainsummer.xyz https://github.com/base/onchainsummer.xyz.git ""onchainsummer.xyz"""
++bounties/base/eip-7702-proxy,511763911,https://github.com/base/eip-7702-proxy.git,First-party (>50MB),Submodule,"git submodule add --name eip-7702-proxy https://github.com/base/eip-7702-proxy.git ""bounties/base/eip-7702-proxy"""
++bounties/base/smart-wallet,495830486,https://github.com/coinbase/smart-wallet.git,First-party (>50MB),Submodule,"git submodule add --name smart-wallet https://github.com/coinbase/smart-wallet.git ""bounties/base/smart-wallet"""
++docs,495259470,https://github.com/base/docs.git,Documentation (>50MB),Submodule,"git submodule add --name docs https://github.com/base/docs.git ""docs"""
++bounties/base/docs,477160918,https://github.com/base/docs.git,Documentation (>50MB),Submodule,"git submodule add --name docs https://github.com/base/docs.git ""bounties/base/docs"""
++bounties/agglayer/ulxly-contracts,462203923,https://github.com/agglayer/ulxly-contracts.git,First-party (>50MB),Submodule,"git submodule add --name ulxly-contracts https://github.com/agglayer/ulxly-contracts.git ""bounties/agglayer/ulxly-contracts"""
++bounties/Revert v4lend Competition/lib/uniswap-hooks,370148852,https://github.com/openzeppelin/uniswap-hooks,Third-party / Library,Submodule,"git submodule add --name uniswap-hooks https://github.com/openzeppelin/uniswap-hooks ""bounties/Revert v4lend Competition/lib/uniswap-hooks"""
++bounties/liquity/bold,285620883,https://github.com/liquity/bold.git,First-party (>50MB),Submodule,"git submodule add --name bold https://github.com/liquity/bold.git ""bounties/liquity/bold"""
++ai-cookbook,217281772,https://github.com/temporalio/ai-cookbook.git,Third-party / Library,Submodule,"git submodule add --name ai-cookbook https://github.com/temporalio/ai-cookbook.git ""ai-cookbook"""
++bounties/base/contracts,190540276,https://github.com/base/contracts.git,First-party (>50MB),Submodule,"git submodule add --name contracts https://github.com/base/contracts.git ""bounties/base/contracts"""
++foundry,132406599,https://github.com/foundry-rs/foundry.git,Third-party / Library,Submodule,"git submodule add --name foundry https://github.com/foundry-rs/foundry.git ""foundry"""
++bounties/base/foundry,104918048,https://github.com/base/foundry.git,First-party (>50MB),Submodule,"git submodule add --name foundry https://github.com/base/foundry.git ""bounties/base/foundry"""
++bounties/base/base-std,99824515,https://github.com/base/base-std.git,First-party (>50MB),Submodule,"git submodule add --name base-std https://github.com/base/base-std.git ""bounties/base/base-std"""
++bounties/liquity/v2-gov,86643016,https://github.com/liquity/V2-gov.git,First-party (>50MB),Submodule,"git submodule add --name v2-gov https://github.com/liquity/V2-gov.git ""bounties/liquity/v2-gov"""
++bounties/base/base,79038537,https://github.com/base/base.git,First-party (>50MB),Submodule,"git submodule add --name base https://github.com/base/base.git ""bounties/base/base"""
++base-anvil,75451153,https://github.com/base/base-anvil.git,First-party (>50MB),Submodule,"git submodule add --name base-anvil https://github.com/base/base-anvil.git ""base-anvil"""
++bounties/base/MagicSpend,71083109,https://github.com/coinbase/MagicSpend.git,First-party (>50MB),Submodule,"git submodule add --name MagicSpend https://github.com/coinbase/MagicSpend.git ""bounties/base/MagicSpend"""
++openzeppelin-contracts,69957558,https://github.com/OpenZeppelin/openzeppelin-contracts.git,Third-party / Library,Submodule,"git submodule add --name openzeppelin-contracts https://github.com/OpenZeppelin/openzeppelin-contracts.git ""openzeppelin-contracts"""
++bounties/agglayer/vault-bridge,42852272,https://github.com/agglayer/vault-bridge.git,First-party (>50MB),Submodule,"git submodule add --name vault-bridge https://github.com/agglayer/vault-bridge.git ""bounties/agglayer/vault-bridge"""
++base-mcp-legacy,38090414,https://github.com/base/base-mcp-legacy.git,First-party (>50MB),Submodule,"git submodule add --name base-mcp-legacy https://github.com/base/base-mcp-legacy.git ""base-mcp-legacy"""
++bounties/agglayer/agglayer-contracts,19128664,https://github.com/agglayer/agglayer-contracts.git,First-party (>50MB),Submodule,"git submodule add --name agglayer-contracts https://github.com/agglayer/agglayer-contracts.git ""bounties/agglayer/agglayer-contracts"""
++op-rbuilder,6914402,https://github.com/base/op-rbuilder.git,First-party (>50MB),Submodule,"git submodule add --name op-rbuilder https://github.com/base/op-rbuilder.git ""op-rbuilder"""
++bounties/base/skills,2359041,https://github.com/base/skills.git,First-party (<5MB),Absorb,"timestamp=$(date -u +""%Y%m%dT%H%M%SZ"") && mkdir -p maintenance/backups/$timestamp && mv ""bounties/base/skills/.git"" ""maintenance/backups/$timestamp/skills.git"" && git add ""bounties/base/skills"""
++bounties/pump-fun/pump-public-docs,2324004,https://github.com/pump-fun/pump-public-docs.git,Documentation (<5MB),Absorb,"timestamp=$(date -u +""%Y%m%dT%H%M%SZ"") && mkdir -p maintenance/backups/$timestamp && mv ""bounties/pump-fun/pump-public-docs/.git"" ""maintenance/backups/$timestamp/pump-public-docs.git"" && git add ""bounties/pump-fun/pump-public-docs"""
++base-account-privy,1838926,https://github.com/base/base-account-privy.git,First-party (<5MB),Absorb,"timestamp=$(date -u +""%Y%m%dT%H%M%SZ"") && mkdir -p maintenance/backups/$timestamp && mv ""base-account-privy/.git"" ""maintenance/backups/$timestamp/base-account-privy.git"" && git add ""base-account-privy"""
++bounties/Revert v4lend Competition/lib/forge-std,1422363,https://github.com/foundry-rs/forge-std,Third-party / Library,Submodule,"git submodule add --name forge-std https://github.com/foundry-rs/forge-std ""bounties/Revert v4lend Competition/lib/forge-std"""
++bounties/Revert v4lend Competition/lib/hookmate,442599,https://github.com/akshatmittal/hookmate,Third-party / Library,Submodule,"git submodule add --name hookmate https://github.com/akshatmittal/hookmate ""bounties/Revert v4lend Competition/lib/hookmate"""
++contract-address-checker,227934,https://github.com/base/contract-address-checker.git,First-party (<5MB),Absorb,"timestamp=$(date -u +""%Y%m%dT%H%M%SZ"") && mkdir -p maintenance/backups/$timestamp && mv ""contract-address-checker/.git"" ""maintenance/backups/$timestamp/contract-address-checker.git"" && git add ""contract-address-checker"""
++base-snapshots-dashboard,200820,https://github.com/base/base-snapshots-dashboard.git,First-party (<5MB),Absorb,"timestamp=$(date -u +""%Y%m%dT%H%M%SZ"") && mkdir -p maintenance/backups/$timestamp && mv ""base-snapshots-dashboard/.git"" ""maintenance/backups/$timestamp/base-snapshots-dashboard.git"" && git add ""base-snapshots-dashboard"""
++transaction-latency,111636,https://github.com/base/transaction-latency.git,First-party (<5MB),Absorb,"timestamp=$(date -u +""%Y%m%dT%H%M%SZ"") && mkdir -p maintenance/backups/$timestamp && mv ""transaction-latency/.git"" ""maintenance/backups/$timestamp/transaction-latency.git"" && git add ""transaction-latency"""
+diff --git a/maintenance/reports/top200_untracked.csv b/maintenance/reports/top200_untracked.csv
+new file mode 100644
+index 0000000..f887de8
+--- /dev/null
++++ b/maintenance/reports/top200_untracked.csv
+@@ -0,0 +1,201 @@
++rank,bytes,human_size,path,nested_git_present,remote_url,recommended_action
++1,1541104809,1.44 GB,bounties/base/spend-permissions/,True,https://github.com/coinbase/spend-permissions.git,submodule
++2,847327864,808.07 MB,onchainsummer.xyz/,True,https://github.com/base/onchainsummer.xyz.git,submodule
++3,511763911,488.06 MB,bounties/base/eip-7702-proxy/,True,https://github.com/base/eip-7702-proxy.git,submodule
++4,495830486,472.86 MB,bounties/base/smart-wallet/,True,https://github.com/coinbase/smart-wallet.git,submodule
++5,495259470,472.32 MB,docs/,True,https://github.com/base/docs.git,submodule
++6,477160918,455.06 MB,bounties/base/docs/,True,https://github.com/base/docs.git,submodule
++7,462203923,440.79 MB,bounties/agglayer/ulxly-contracts/,True,https://github.com/agglayer/ulxly-contracts.git,submodule
++8,285620883,272.39 MB,bounties/liquity/bold/,True,https://github.com/liquity/bold.git,submodule
++9,217281772,207.22 MB,ai-cookbook/,True,https://github.com/temporalio/ai-cookbook.git,submodule
++10,190540276,181.71 MB,bounties/base/contracts/,True,https://github.com/base/contracts.git,submodule
++11,132406599,126.27 MB,foundry/,True,https://github.com/foundry-rs/foundry.git,submodule
++12,104918048,100.06 MB,bounties/base/foundry/,True,https://github.com/base/foundry.git,submodule
++13,99824515,95.20 MB,bounties/base/base-std/,True,https://github.com/base/base-std.git,submodule
++14,86643016,82.63 MB,bounties/liquity/v2-gov/,True,https://github.com/liquity/V2-gov.git,submodule
++15,79038537,75.38 MB,bounties/base/base/,True,https://github.com/base/base.git,submodule
++16,75451153,71.96 MB,base-anvil/,True,https://github.com/base/base-anvil.git,submodule
++17,71083109,67.79 MB,bounties/base/MagicSpend/,True,https://github.com/coinbase/MagicSpend.git,submodule
++18,69957558,66.72 MB,openzeppelin-contracts/,True,https://github.com/OpenZeppelin/openzeppelin-contracts.git,submodule
++19,42852272,40.87 MB,bounties/agglayer/vault-bridge/,True,https://github.com/agglayer/vault-bridge.git,submodule
++20,38090414,36.33 MB,base-mcp-legacy/,True,https://github.com/base/base-mcp-legacy.git,absorb
++21,19128664,18.24 MB,bounties/agglayer/agglayer-contracts/,True,https://github.com/agglayer/agglayer-contracts.git,submodule
++22,8825864,8.42 MB,bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-4d410413-516f-4a99-998c-2b794d9e4857.png,False,none,archive_or_track
++23,6914402,6.59 MB,op-rbuilder/,True,https://github.com/base/op-rbuilder.git,absorb
++24,5929171,5.65 MB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/hardhat/artifacts/build-info/1d5bf6c85110ac2c81af05c7fccc7c48.json,False,none,remove_and_ignore
++25,4450866,4.24 MB,bounties/base-h1-prep/evidence/coinbase-ethics-bounty-2022.png,False,none,archive_or_track
++26,3713162,3.54 MB,bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-ad409831-9553-4dd5-9570-9b9bf70f4b1a.png,False,none,archive_or_track
++27,2765970,2.64 MB,html/inlineAssembly.jpeg,False,none,archive_or_track
++28,2615410,2.49 MB,bounties/base-h1-prep/evidence/hackerone-scope-ui/third-party-whitehatsnepal-coinbase-scope.png,False,none,archive_or_track
++29,2359041,2.25 MB,bounties/base/skills/,True,https://github.com/base/skills.git,absorb
++30,2337286,2.23 MB,bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-dcb846dc-8ead-452e-8a30-0f6ec8c55d4d.png,False,none,archive_or_track
++31,2324004,2.22 MB,bounties/pump-fun/pump-public-docs/,True,https://github.com/pump-fun/pump-public-docs.git,absorb
++32,1885880,1.80 MB,bounties/pump-fun/pump-rust-client/artifacts/pump.so,False,none,remove_and_ignore
++33,1838926,1.75 MB,base-account-privy/,True,https://github.com/base/base-account-privy.git,absorb
++34,1406384,1.34 MB,bounties/pump-fun/pump-rust-client/artifacts/raydium_amm_v4.so,False,none,remove_and_ignore
++35,1389598,1.33 MB,html/Reentrancy.jpeg,False,none,archive_or_track
++36,1327417,1.27 MB,html/OracleManipulationAttacks.jpeg,False,none,archive_or_track
++37,1295344,1.24 MB,bounties/pump-fun/pump-rust-client/artifacts/mpl_token_metadata.so,False,none,remove_and_ignore
++38,1232672,1.18 MB,bounties/pump-fun/pump-rust-client/artifacts/pump_amm.so,False,none,remove_and_ignore
++39,1172173,1.12 MB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/solady/audits/ackee-blockchain-solady-report.pdf,False,none,remove_and_ignore
++40,1172173,1.12 MB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/audits/ackee-blockchain-solady-report.pdf,False,none,remove_and_ignore
++41,1136105,1.08 MB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/WebAuthn_forge/lib/openzeppelin-contracts/package-lock.json,False,none,remove_and_ignore
++42,1061592,1.01 MB,bounties/pump-fun/pump-rust-client/artifacts/pump_stables_router.so,False,none,remove_and_ignore
++43,1000527,977.08 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/audits/2018-10.pdf,False,none,remove_and_ignore
++44,1000527,977.08 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/WebAuthn_forge/lib/openzeppelin-contracts/audit/2018-10.pdf,False,none,remove_and_ignore
++45,1000527,977.08 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/audits/2018-10.pdf,False,none,remove_and_ignore
++46,950468,928.19 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/solady/audits/cantina-solady-report.pdf,False,none,remove_and_ignore
++47,950468,928.19 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/audits/cantina-solady-report.pdf,False,none,remove_and_ignore
++48,910284,888.95 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/audits/2023-10-v5.0.pdf,False,none,remove_and_ignore
++49,910284,888.95 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/audits/2023-10-v5.0.pdf,False,none,remove_and_ignore
++50,903887,882.70 KB,html/FrontRunning.jpeg,False,none,archive_or_track
++51,853528,833.52 KB,bounties/pump-fun/pump-rust-client/artifacts/pump_fees.so,False,none,remove_and_ignore
++52,808897,789.94 KB,bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-05c44bce-ce67-4fab-894f-839415e62146.png,False,none,archive_or_track
++53,676720,660.86 KB,bounties/pump-fun/pump-rust-client/artifacts/mayhem_program.so,False,none,remove_and_ignore
++54,662858,647.32 KB,html/unprotectedSwaps.jpeg,False,none,archive_or_track
++55,614024,599.63 KB,html/useofTXTorigin.jpeg,False,none,archive_or_track
++56,591176,577.32 KB,bounties/pump-fun/pump-rust-client/artifacts/terminal_proxy.so,False,none,remove_and_ignore
++57,517336,505.21 KB,bounties/pump-fun/pump-rust-client/artifacts/pump_agent_payments.so,False,none,remove_and_ignore
++58,515577,503.49 KB,bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-5572fa76-c0a3-4608-a165-f877df27c335.png,False,none,archive_or_track
++59,507710,495.81 KB,bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-67ec50ea-26dd-4a5c-92ba-39c5a86bafe3.png,False,none,archive_or_track
++60,502236,490.46 KB,html/GriefingAttacks.jpeg,False,none,archive_or_track
++61,495476,483.86 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/audits/report-review-coinbase-webauthn.pdf,False,none,remove_and_ignore
++62,485719,474.33 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/audit/report-review-coinbase-magicspend.pdf,False,none,remove_and_ignore
++63,485395,474.02 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/audits/2023-05-v4.9.pdf,False,none,remove_and_ignore
++64,485395,474.02 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/audits/2023-05-v4.9.pdf,False,none,remove_and_ignore
++65,473755,462.65 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/yarn.lock,False,none,remove_and_ignore
++66,468896,457.91 KB,bounties/pump-fun/pump-rust-client/artifacts/serum_dex.so,False,none,remove_and_ignore
++67,446915,436.44 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/package-lock.json,False,none,remove_and_ignore
++68,446915,436.44 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/package-lock.json,False,none,remove_and_ignore
++69,441472,431.12 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/forge-std/src/safeconsole.sol,False,none,remove_and_ignore
++70,411146,401.51 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/lib/forge-std/src/safeconsole.sol,False,none,remove_and_ignore
++71,411146,401.51 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/forge-std/src/safeconsole.sol,False,none,remove_and_ignore
++72,411146,401.51 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/lib/forge-std/src/safeconsole.sol,False,none,remove_and_ignore
++73,394383,385.14 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/test/data/wycheproof.jsonl,False,none,remove_and_ignore
++74,384028,375.03 KB,html/ABIHASHCOLLISION.jpeg,False,none,archive_or_track
++75,381762,372.81 KB,bounties/base-h1-prep/evidence/hackerone-scope-ui/codex-clipboard-f3475204-548f-4741-a81c-4f34ea540133.png,False,none,archive_or_track
++76,377410,368.56 KB,html/ethersurpriseattacks.jpeg,False,none,archive_or_track
++77,375300,366.50 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/mainnet/solcInputs/02113a2ed1850c3774563305ee607f11.json,False,none,remove_and_ignore
++78,339201,331.25 KB,html/ExposedData.jpeg,False,none,archive_or_track
++79,329042,321.33 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/sage/external/Pairings/tests/testvector_bls12_377_bw6_768.py,False,none,remove_and_ignore
++80,327602,319.92 KB,bounties/pump-fun/pump-rust-client/idls/pump.json,False,none,track_or_ignore
++81,326907,319.25 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/sage/external/Pairings/tests/testvector_bls12_377_cp8d1_768.py,False,none,remove_and_ignore
++82,291623,284.79 KB,bounties/pump-fun/pump-rust-client/Cargo.lock,False,none,track_or_ignore
++83,268729,262.43 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/hardhat/package-lock.json,False,none,remove_and_ignore
++84,228409,223.06 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/sage/external/Pairings/tests/testvector_bls12_377_cp12d3_768.py,False,none,remove_and_ignore
++85,227934,222.59 KB,contract-address-checker/,True,https://github.com/base/contract-address-checker.git,absorb
++86,227816,222.48 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/audits/cantina-spearbit-coinbase-solady-report.pdf,False,none,remove_and_ignore
++87,223231,218.00 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/WebAuthn_forge/test/vectors_wychproof/ecdsa_secp256r1_sha256_test.json,False,none,remove_and_ignore
++88,217103,212.01 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/audits/xuwinnie-solady-cbrt-proof.pdf,False,none,remove_and_ignore
++89,204184,199.40 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/audits/2022-10-ERC4626.pdf,False,none,remove_and_ignore
++90,204184,199.40 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/audits/2022-10-ERC4626.pdf,False,none,remove_and_ignore
++91,203004,198.25 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/test/fixtures/assertions_fixture.json,False,none,remove_and_ignore
++92,200820,196.11 KB,base-snapshots-dashboard/,True,https://github.com/base/base-snapshots-dashboard.git,absorb
++93,199401,194.73 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/certora/reports/2022-03.pdf,False,none,remove_and_ignore
++94,199401,194.73 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/certora/reports/2022-03.pdf,False,none,remove_and_ignore
++95,191835,187.34 KB,bounties/pump-fun/pump-rust-client/idls/pump_amm.json,False,none,track_or_ignore
++96,187095,182.71 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/kovan/EntryPoint.json,False,none,remove_and_ignore
++97,179666,175.46 KB,bounties/base/evidence/rpc_code_capture_2026-10-14.json,False,none,track_or_ignore
++98,179666,175.46 KB,bounties/base-h1-prep/evidence/legacy-cantina-capture/rpc_code_capture_2026-10-14.json,False,none,track_or_ignore
++99,163442,159.61 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/sepolia/EntryPoint.json,False,none,remove_and_ignore
++100,163442,159.61 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/optimism/EntryPoint.json,False,none,remove_and_ignore
++101,163442,159.61 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/mumbai/EntryPoint.json,False,none,remove_and_ignore
++102,163442,159.61 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/matic/EntryPoint.json,False,none,remove_and_ignore
++103,163442,159.61 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/mainnet/EntryPoint.json,False,none,remove_and_ignore
++104,163442,159.61 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/goerli/EntryPoint.json,False,none,remove_and_ignore
++105,163442,159.61 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/gnosis/EntryPoint.json,False,none,remove_and_ignore
++106,163442,159.61 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/arbitrum/EntryPoint.json,False,none,remove_and_ignore
++107,159306,155.57 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/utils/LibClone.sol,False,none,remove_and_ignore
++108,159306,155.57 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/src/utils/LibClone.sol,False,none,remove_and_ignore
++109,155663,152.01 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/mainnet/SimpleAccountFactory.json,False,none,remove_and_ignore
++110,155606,151.96 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/audits/2022-10-Checkpoints.pdf,False,none,remove_and_ignore
++111,155606,151.96 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/audits/2022-10-Checkpoints.pdf,False,none,remove_and_ignore
++112,143768,140.40 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/sage/external/Pairings/tests/test_pairing.py,False,none,remove_and_ignore
++113,133483,130.35 KB,bounties/pump-fun/pump-rust-client/idls/pump_fees.json,False,none,track_or_ignore
++114,132223,129.12 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/certora/reports/2022-05.pdf,False,none,remove_and_ignore
++115,132223,129.12 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/certora/reports/2022-05.pdf,False,none,remove_and_ignore
++116,131684,128.60 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/forge-std/src/Vm.sol,False,none,remove_and_ignore
++117,125687,122.74 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/kovan/SimpleWallet.json,False,none,remove_and_ignore
++118,125303,122.37 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/kovan/solcInputs/9255faacf3ae4e81db1326413027bfa0.json,False,none,remove_and_ignore
++119,123829,120.93 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/sage/external/Pairings/tests/testvector_bls24_315_bw6_672.py,False,none,remove_and_ignore
++120,117671,114.91 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/WebAuthn_forge/test/vectors_wychproof/vectors_valid.json,False,none,remove_and_ignore
++121,111636,109.02 KB,transaction-latency/,True,https://github.com/base/transaction-latency.git,absorb
++122,109623,107.05 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/sage/external/Pairings/pairing.py,False,none,remove_and_ignore
++123,108450,105.91 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/test/access/manager/AccessManager.test.js,False,none,remove_and_ignore
++124,108450,105.91 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/test/access/manager/AccessManager.test.js,False,none,remove_and_ignore
++125,103652,101.22 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/sage/FCL_starknet/FCL_pedersen_cst.sage,False,none,remove_and_ignore
++126,102720,100.31 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/solady/audits/shung-solady-erc721-audit.pdf,False,none,remove_and_ignore
++127,102720,100.31 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/audits/shung-solady-erc721-audit.pdf,False,none,remove_and_ignore
++128,102434,100.03 KB,bounties/pump-fun/pump-rust-client/src/sdk/mod.rs,False,none,track_or_ignore
++129,102322,99.92 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/CHANGELOG.md,False,none,remove_and_ignore
++130,102322,99.92 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/CHANGELOG.md,False,none,remove_and_ignore
++131,97496,95.21 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/WebAuthn_forge/test/vectors_wychproof/eddsa_test.json,False,none,remove_and_ignore
++132,92882,90.71 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/certora/reports/2021-10.pdf,False,none,remove_and_ignore
++133,92882,90.71 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/certora/reports/2021-10.pdf,False,none,remove_and_ignore
++134,92826,90.65 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/sage/external/Pairings/tests/cost_pairing.py,False,none,remove_and_ignore
++135,92551,90.38 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/test/FixedPointMathLib.t.sol,False,none,remove_and_ignore
++136,90056,87.95 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/test/utils/forge-std/Vm.sol,False,none,remove_and_ignore
++137,89329,87.24 KB,security-mesh/src/glassbox/GlassboxMirrorPlane.ts,False,none,track_or_ignore
++138,85876,83.86 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/test/SafeTransferLib.t.sol,False,none,remove_and_ignore
++139,83048,81.10 KB,bounties/base/evidence/rpc_state_capture_2026-10-14.json,False,none,track_or_ignore
++140,83048,81.10 KB,bounties/base-h1-prep/evidence/legacy-cantina-capture/rpc_state_capture_2026-10-14.json,False,none,track_or_ignore
++141,82966,81.02 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/hardhat/artifacts/contracts/Webauthn_prec.sol/Webauthn_prec.json,False,none,remove_and_ignore
++142,81868,79.95 KB,foundry-execution-engine/runs/643b1985-5870-4895-80b2-8e3fe380b8b9/stdout.log,False,none,remove_and_ignore
++143,81541,79.63 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/kovan/TestCounter.json,False,none,remove_and_ignore
++144,80750,78.86 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/solady/.gas-snapshot,False,none,remove_and_ignore
++145,78420,76.58 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/solady/test/FixedPointMathLib.t.sol,False,none,remove_and_ignore
++146,75525,73.75 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/test/LibString.t.sol,False,none,remove_and_ignore
++147,74236,72.50 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/solady/src/utils/LibClone.sol,False,none,remove_and_ignore
++148,72831,71.12 KB,security-mesh/package-lock.json,False,none,track_or_ignore
++149,71234,69.56 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/lib/forge-std/src/console2.sol,False,none,remove_and_ignore
++150,71234,69.56 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/forge-std/src/console2.sol,False,none,remove_and_ignore
++151,71234,69.56 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/lib/forge-std/src/console2.sol,False,none,remove_and_ignore
++152,70977,69.31 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/sepolia/solcInputs/a4c52f0671aad8941c53d6ead2063803.json,False,none,remove_and_ignore
++153,70977,69.31 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/optimism/solcInputs/a4c52f0671aad8941c53d6ead2063803.json,False,none,remove_and_ignore
++154,70977,69.31 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/mumbai/solcInputs/a4c52f0671aad8941c53d6ead2063803.json,False,none,remove_and_ignore
++155,70977,69.31 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/matic/solcInputs/a4c52f0671aad8941c53d6ead2063803.json,False,none,remove_and_ignore
++156,70977,69.31 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/mainnet/solcInputs/a4c52f0671aad8941c53d6ead2063803.json,False,none,remove_and_ignore
++157,70977,69.31 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/goerli/solcInputs/a4c52f0671aad8941c53d6ead2063803.json,False,none,remove_and_ignore
++158,70977,69.31 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/gnosis/solcInputs/a4c52f0671aad8941c53d6ead2063803.json,False,none,remove_and_ignore
++159,70977,69.31 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/arbitrum/solcInputs/a4c52f0671aad8941c53d6ead2063803.json,False,none,remove_and_ignore
++160,70852,69.19 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/WebAuthn_forge/lib/openzeppelin-contracts/lib/forge-std/src/console2.sol,False,none,remove_and_ignore
++161,70852,69.19 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/WebAuthn_forge/lib/forge-std/src/console2.sol,False,none,remove_and_ignore
++162,70830,69.17 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/forge-std/src/console.sol,False,none,remove_and_ignore
++163,68723,67.11 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/test/LibClone.t.sol,False,none,remove_and_ignore
++164,68220,66.62 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/lib/forge-std/src/console.sol,False,none,remove_and_ignore
++165,68220,66.62 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/forge-std/src/console.sol,False,none,remove_and_ignore
++166,68220,66.62 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/WebAuthn_forge/lib/openzeppelin-contracts/lib/forge-std/src/console.sol,False,none,remove_and_ignore
++167,68220,66.62 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/WebAuthn_forge/lib/forge-std/src/console.sol,False,none,remove_and_ignore
++168,68220,66.62 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/lib/forge-std/src/console.sol,False,none,remove_and_ignore
++169,66813,65.25 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/WebAuthn_forge/lib/openzeppelin-contracts/CHANGELOG.md,False,none,remove_and_ignore
++170,63946,62.45 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/matic/solcInputs/cfbebdf1101dd2bc0f310cb0b7d62cb7.json,False,none,remove_and_ignore
++171,63946,62.45 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/deployments/mainnet/solcInputs/cfbebdf1101dd2bc0f310cb0b7d62cb7.json,False,none,remove_and_ignore
++172,60986,59.56 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/test/entrypoint.test.ts,False,none,remove_and_ignore
++173,59764,58.36 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/sage/external/Pairings/tests/testvector_bls24_315_bw6_640.py,False,none,remove_and_ignore
++174,59554,58.16 KB,bounties/pump-fun/pump-rust-client/idls/pump_agent_payments.json,False,none,track_or_ignore
++175,58837,57.46 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/solady/test/LibString.t.sol,False,none,remove_and_ignore
++176,58246,56.88 KB,bounties/pump-fun/pump-rust-client/src/sdk/pump_v2.rs,False,none,track_or_ignore
++177,56184,54.87 KB,bounties/pump-fun/poc/package-lock.json,False,none,track_or_ignore
++178,55321,54.02 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/lib/forge-std/src/Vm.sol,False,none,remove_and_ignore
++179,55321,54.02 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/forge-std/src/Vm.sol,False,none,remove_and_ignore
++180,55321,54.02 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/lib/forge-std/src/Vm.sol,False,none,remove_and_ignore
++181,54870,53.58 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/utils/FixedPointMathLib.sol,False,none,remove_and_ignore
++182,54870,53.58 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/src/utils/FixedPointMathLib.sol,False,none,remove_and_ignore
++183,54509,53.23 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/sage/external/Pairings/tests/testvector_bls12_379_bw6_768.py,False,none,remove_and_ignore
++184,53134,51.89 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/solady/src/utils/LibString.sol,False,none,remove_and_ignore
++185,52778,51.54 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/account-abstraction/eip/EIPS/eip-4337.md,False,none,remove_and_ignore
++186,52270,51.04 KB,foundry-execution-engine/runs/ea7b37c1-4e42-4832-b639-865192be18db/stdout.log,False,none,remove_and_ignore
++187,52270,51.04 KB,foundry-execution-engine/runs/793faa74-991a-4e55-b571-7b5e2cb250a5/stdout.log,False,none,remove_and_ignore
++188,52268,51.04 KB,foundry-execution-engine/runs/3792fd20-42b8-4e6c-be2d-5c640eab5ce0/stdout.log,False,none,remove_and_ignore
++189,52185,50.96 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/sage/external/Pairings/tests/testvector_bls24_315_cp8d1_640.py,False,none,remove_and_ignore
++190,52069,50.85 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/test/ext/delegatexyz/DelegateCheckerLib.t.sol,False,none,remove_and_ignore
++191,50833,49.64 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/sage/external/Pairings/tests/testvector_bls12_379_cp8d1_768.py,False,none,remove_and_ignore
++192,50251,49.07 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/FreshCryptoLib/solidity/tests/hardhat/contracts/Elliptic_ZZ.sol,False,none,remove_and_ignore
++193,50000,48.83 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/tokens/ext/zksync/ERC1155.sol,False,none,remove_and_ignore
++194,50000,48.83 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/src/tokens/ext/zksync/ERC1155.sol,False,none,remove_and_ignore
++195,49456,48.30 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/tokens/ERC1155.sol,False,none,remove_and_ignore
++196,49456,48.30 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/solady/src/tokens/ERC1155.sol,False,none,remove_and_ignore
++197,49197,48.04 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/solady/src/tokens/ERC1155.sol,False,none,remove_and_ignore
++198,48959,47.81 KB,security-mesh/src/agent-registry.ts,False,none,track_or_ignore
++199,47753,46.63 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/webauthn-sol/lib/openzeppelin-contracts/test/governance/TimelockController.test.js,False,none,remove_and_ignore
++200,47753,46.63 KB,bounties/base/build/988d48c4d61eefa10e44b873380d6587dff1884e/lib/openzeppelin-contracts/test/governance/TimelockController.test.js,False,none,remove_and_ignore
+diff --git a/maintenance/runbook-remediation.md b/maintenance/runbook-remediation.md
+new file mode 100644
+index 0000000..fe4e68a
+--- /dev/null
++++ b/maintenance/runbook-remediation.md
+@@ -0,0 +1,83 @@
++# Monorepo Remediation Runbook
++
++**Audience:** DevOps Engineers, Monorepo Maintainers, Release Engineers  
++**Target Root:** `/home/nova/projects/cantina`  
++**Execution Posture:** Non-destructive by default. Always dry-run before confirm.
++
++---
++
++## 1. Safety & Non-Destructive Principles
++
++1. **Mandatory Backups:** Every script creates an isolated backup under `maintenance/backups/<timestamp>/` prior to any modification.
++2. **Idempotence:** Scripts support `--dry-run` (default) and `--confirm`.
++3. **No Unapproved Force:** Never force-delete unversioned code; use `git rm --cached` or archive `.git` metadata.
++4. **Zero Remote Push:** All operations stage changes locally for PR review.
++
++---
++
++## 2. Core Execution Procedures
++
++### A. Submodule Conversion (Targets > 50 MB)
++Converts loose, large nested repositories into tracked Git submodules while backing up `.git` metadata:
++
++```bash
++# Dry run verification
++./scripts/convert-to-submodule.sh --dry-run bounties/base/spend-permissions
++
++# Execute conversion and local commit
++./scripts/convert-to-submodule.sh --confirm bounties/base/spend-permissions
++```
++
++### B. Monorepo Absorption (First-party targets < 5 MB)
++Archives nested `.git` metadata into `maintenance/backups/` and stages source code directly:
++
++```bash
++# Dry run verification
++./scripts/absorb-nested.sh --dry-run base-account-privy
++
++# Execute absorption and local commit
++./scripts/absorb-nested.sh --confirm base-account-privy
++```
++
++### C. Workspace Cache Purge
++Cleans non-tracked transient Python, test, and log artifacts:
++
++```bash
++# Dry run check
++./scripts/clean-local.sh --dry-run
++
++# Execute purge
++./scripts/clean-local.sh --confirm
++```
++
++---
++
++## 3. Rollback & Recovery Procedures
++
++### Rollback Submodule Conversion
++If a submodule addition needs to be rolled back:
++```bash
++git submodule deinit -f <path>
++git rm -f <path>
++rm -rf .git/modules/<name>
++git restore --staged .gitmodules
++```
++
++### Rollback Monorepo Absorption
++To restore the independent `.git` repository from backup:
++```bash
++LATEST_BACKUP=$(ls -td maintenance/backups/*/ | head -n1)
++cp -r "${LATEST_BACKUP}/<name>.git" "<path>/.git"
++git restore --staged "<path>"
++```
++
++---
++
++## 4. Owner & Contact Directory
++
++| Area | Primary Owner | Escalation / Reviewer |
++|---|---|---|
++| Submodule Lifecycle & CI Workflows | DevOps Lead | Release Manager |
++| Monorepo Absorption & Packaging | Monorepo Maintainer | Architecture Analyst |
++| Bounty Scopes & Evidence Verification | Security Auditor | Playbook Admin Oracle |
++| Local Tooling & Caches | Build Engineer | DevOps Lead |
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000..eee14a0
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,39 @@
++[build-system]
++requires = ["setuptools>=61.0", "wheel"]
++build-backend = "setuptools.build_meta"
++
++[project]
++name = "cantina-universal-adaptive-engine"
++version = "0.1.0"
++description = "Universal Adaptive Engineering Engine and Multi-Agent Security Audit Mesh"
++readme = "README.md"
++requires-python = ">=3.10"
++license = { text = "MIT" }
++authors = [
++    { name = "Repository Steward & Detective", email = "devops@cantina.local" }
++]
++dependencies = [
++    "jsonschema>=4.10.0",
++    "pyyaml>=6.0.1",
++]
++
++[project.optional-dependencies]
++dev = [
++    "pytest>=7.4.0",
++    "pytest-cov>=4.1.0",
++    "ruff>=0.1.0",
++    "mypy>=1.5.0",
++    "types-PyYAML>=6.0.12",
++    "types-jsonschema>=4.10.0",
++]
++
++[project.scripts]
++uae = "universal_adaptive_engine.cli:main"
++
++[tool.pytest.ini_options]
++testpaths = ["tests"]
++python_files = ["test_*.py"]
++
++[tool.setuptools.packages.find]
++where = ["."]
++include = ["universal_adaptive_engine*"]
+diff --git a/requirements.txt b/requirements.txt
+new file mode 100644
+index 0000000..36acd17
+--- /dev/null
++++ b/requirements.txt
+@@ -0,0 +1,6 @@
++# Pinned dependencies generated for Python 3.10+
++# Run: pip-compile requirements.in --output-file=requirements.txt
++jsonschema==4.10.3
++pyyaml==6.0.1
++attrs==23.2.0
++pyrsistent==0.20.0
+diff --git a/scripts/absorb-nested.sh b/scripts/absorb-nested.sh
+new file mode 100755
+index 0000000..fcae288
+--- /dev/null
++++ b/scripts/absorb-nested.sh
+@@ -0,0 +1,75 @@
++#!/usr/bin/env bash
++# scripts/absorb-nested.sh
++# Safely absorb a small first-party nested repository into the outer monorepo.
++# Backs up .git metadata and stages content for commit.
++# Supports --dry-run (default) and --confirm.
++
++set -euo pipefail
++
++DRY_RUN=1
++TARGET_PATH=""
++
++for arg in "$@"; do
++    case "$arg" in
++        --confirm)
++            DRY_RUN=0
++            ;;
++        --dry-run)
++            DRY_RUN=1
++            ;;
++        --help|-h)
++            echo "Usage: $0 [--dry-run | --confirm] <path/to/nested/repo>"
++            echo "  --dry-run   (Default) Show actions without modifying Git state."
++            echo "  --confirm   Execute backup, git metadata removal, and commit."
++            exit 0
++            ;;
++        *)
++            if [ -z "$TARGET_PATH" ]; then
++                TARGET_PATH="$arg"
++            else
++                echo "Unexpected extra argument: $arg"
++                exit 1
++            fi
++            ;;
++    esac
++done
++
++if [ -z "$TARGET_PATH" ]; then
++    echo "Error: Target path required. Run with --help for usage."
++    exit 1
++fi
++
++if [ ! -d "$TARGET_PATH/.git" ] && [ ! -f "$TARGET_PATH/.git" ]; then
++    echo "Error: '$TARGET_PATH' is not a nested Git repository (no .git found)."
++    exit 1
++fi
++
++NAME=$(basename "$TARGET_PATH")
++TIMESTAMP=$(date -u +"%Y%m%dT%H%M%SZ")
++BACKUP_DIR="maintenance/backups/$TIMESTAMP"
++
++echo "=== Monorepo Absorb Plan ==="
++echo "Target:      $TARGET_PATH"
++echo "Package:     $NAME"
++echo "Backup Dest: $BACKUP_DIR/${NAME}.git"
++
++if [ "$DRY_RUN" -eq 1 ]; then
++    echo ""
++    echo "[MODE] DRY RUN ONLY. No changes made."
++    echo "Commands that will run with --confirm:"
++    echo "  mkdir -p \"$BACKUP_DIR\""
++    echo "  mv \"$TARGET_PATH/.git\" \"$BACKUP_DIR/${NAME}.git\""
++    echo "  git add \"$TARGET_PATH\""
++    echo "  git commit -m \"chore(monorepo): absorb $TARGET_PATH and archive nested .git metadata\""
++    exit 0
++fi
++
++echo ""
++echo "[MODE] Executing monorepo absorption..."
++mkdir -p "$BACKUP_DIR"
++mv "$TARGET_PATH/.git" "$BACKUP_DIR/${NAME}.git"
++
++git add "$TARGET_PATH"
++git commit -m "chore(monorepo): absorb $TARGET_PATH and archive nested .git metadata"
++
++echo "Successfully absorbed $TARGET_PATH into outer repository."
+diff --git a/scripts/clean-local.sh b/scripts/clean-local.sh
+new file mode 100755
+index 0000000..6455ba9
+--- /dev/null
++++ b/scripts/clean-local.sh
+@@ -0,0 +1,79 @@
++#!/usr/bin/env bash
++# scripts/clean-local.sh
++# Safely clean temporary runtime caches, untracked build artifacts, and test logs.
++# Includes --dry-run (default) and --confirm execution flags.
++
++set -euo pipefail
++
++DRY_RUN=1
++
++for arg in "$@"; do
++    case "$arg" in
++        --confirm)
++            DRY_RUN=0
++            ;;
++        --dry-run)
++            DRY_RUN=1
++            ;;
++        --help|-h)
++            echo "Usage: $0 [--dry-run | --confirm]"
++            echo "  --dry-run   (Default) Report files that would be removed without deleting."
++            echo "  --confirm   Execute deletion of transient cache and build artifacts."
++            exit 0
++            ;;
++        *)
++            echo "Unknown argument: $arg"
++            echo "Run with --help for usage."
++            exit 1
++            ;;
++    esac
++done
++
++TARGET_DIRS=(
++    "__pycache__"
++    ".pytest_cache"
++    ".mypy_cache"
++    ".ruff_cache"
++    "*.egg-info"
++)
++
++TARGET_FILES=(
++    "*.pyc"
++    "*.pyo"
++    "*.pyd"
++    ".coverage"
++    "*.log"
++    "*.tmp"
++    "*.swp"
++)
++
++echo "=== Repository Local Cleanup Utility ==="
++if [ "$DRY_RUN" -eq 1 ]; then
++    echo "[MODE] DRY RUN ONLY. No files will be removed. Pass --confirm to execute."
++else
++    echo "[MODE] CONFIRM. Transient artifacts will be purged."
++fi
++
++for dir_pat in "${TARGET_DIRS[@]}"; do
++    while IFS= read -r -d '' d; do
++        if [ "$DRY_RUN" -eq 1 ]; then
++            echo "[DRY-RUN] Directory would be removed: $d"
++        else
++            echo "[REMOVING] Directory: $d"
++            rm -rf "$d"
++        fi
++    done < <(find . -type d -name "$dir_pat" -not -path "./.git/*" -print0 2>/dev/null)
++done
++
++for file_pat in "${TARGET_FILES[@]}"; do
++    while IFS= read -r -d '' f; do
++        if [ "$DRY_RUN" -eq 1 ]; then
++            echo "[DRY-RUN] File would be removed: $f"
++        else
++            echo "[REMOVING] File: $f"
++            rm -f "$f"
++        fi
++    done < <(find . -type f -name "$file_pat" -not -path "./.git/*" -print0 2>/dev/null)
++done
++
++echo "Cleanup scan complete."
+diff --git a/scripts/convert-to-submodule.sh b/scripts/convert-to-submodule.sh
+new file mode 100755
+index 0000000..ad29b53
+--- /dev/null
++++ b/scripts/convert-to-submodule.sh
+@@ -0,0 +1,85 @@
++#!/usr/bin/env bash
++# scripts/convert-to-submodule.sh
++# Safely convert a nested Git repository into a tracked Git submodule.
++# Supports --dry-run (default) and --confirm.
++
++set -euo pipefail
++
++DRY_RUN=1
++TARGET_PATH=""
++
++for arg in "$@"; do
++    case "$arg" in
++        --confirm)
++            DRY_RUN=0
++            ;;
++        --dry-run)
++            DRY_RUN=1
++            ;;
++        --help|-h)
++            echo "Usage: $0 [--dry-run | --confirm] <path/to/nested/repo>"
++            echo "  --dry-run   (Default) Show actions without modifying Git state."
++            echo "  --confirm   Execute backup, submodule registration, and commit."
++            exit 0
++            ;;
++        *)
++            if [ -z "$TARGET_PATH" ]; then
++                TARGET_PATH="$arg"
++            else
++                echo "Unexpected extra argument: $arg"
++                exit 1
++            fi
++            ;;
++    esac
++done
++
++if [ -z "$TARGET_PATH" ]; then
++    echo "Error: Target path required. Run with --help for usage."
++    exit 1
++fi
++
++if [ ! -d "$TARGET_PATH/.git" ] && [ ! -f "$TARGET_PATH/.git" ]; then
++    echo "Error: '$TARGET_PATH' is not a nested Git repository (no .git found)."
++    exit 1
++fi
++
++NAME=$(basename "$TARGET_PATH")
++REMOTE_URL=$(git -C "$TARGET_PATH" remote get-url origin 2>/dev/null || echo "")
++
++if [ -z "$REMOTE_URL" ]; then
++    echo "Error: No remote 'origin' found for '$TARGET_PATH'. Cannot register as submodule."
++    exit 1
++fi
++
++TIMESTAMP=$(date -u +"%Y%m%dT%H%M%SZ")
++BACKUP_DIR="maintenance/backups/$TIMESTAMP"
++
++echo "=== Submodule Conversion Plan ==="
++echo "Target:      $TARGET_PATH"
++echo "Submodule:   $NAME"
++echo "Remote URL:  $REMOTE_URL"
++echo "Backup Dest: $BACKUP_DIR/${NAME}.git.bak"
++
++if [ "$DRY_RUN" -eq 1 ]; then
++    echo ""
++    echo "[MODE] DRY RUN ONLY. No changes made."
++    echo "Commands that will run with --confirm:"
++    echo "  mkdir -p \"$BACKUP_DIR\""
++    echo "  cp -r \"$TARGET_PATH/.git\" \"$BACKUP_DIR/${NAME}.git.bak\""
++    echo "  rm -rf \"$TARGET_PATH/.git\""
++    echo "  git submodule add --name \"$NAME\" \"$REMOTE_URL\" \"$TARGET_PATH\""
++    echo "  git commit -m \"chore(submodules): register $TARGET_PATH as git submodule\""
++    exit 0
++fi
++
++echo ""
++echo "[MODE] Executing submodule conversion..."
++mkdir -p "$BACKUP_DIR"
++cp -r "$TARGET_PATH/.git" "$BACKUP_DIR/${NAME}.git.bak"
++rm -rf "$TARGET_PATH/.git"
++
++git submodule add --name "$NAME" "$REMOTE_URL" "$TARGET_PATH"
++git add .gitmodules "$TARGET_PATH"
++git commit -m "chore(submodules): register $TARGET_PATH as git submodule"
++
++echo "Successfully converted $TARGET_PATH to submodule."

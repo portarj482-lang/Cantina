@@ -1,0 +1,11 @@
+=== Monorepo Absorb Plan ===
+Target:      bounties/base/skills
+Package:     skills
+Backup Dest: maintenance/backups/20261023T061043Z/skills.git
+
+[MODE] DRY RUN ONLY. No changes made.
+Commands that will run with --confirm:
+  mkdir -p "maintenance/backups/20261023T061043Z"
+  mv "bounties/base/skills/.git" "maintenance/backups/20261023T061043Z/skills.git"
+  git add "bounties/base/skills"
+  git commit -m "chore(monorepo): absorb bounties/base/skills and archive nested .git metadata"

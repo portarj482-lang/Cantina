@@ -1,0 +1,11 @@
+=== Monorepo Absorb Plan ===
+Target:      transaction-latency
+Package:     transaction-latency
+Backup Dest: maintenance/backups/20261023T061043Z/transaction-latency.git
+
+[MODE] DRY RUN ONLY. No changes made.
+Commands that will run with --confirm:
+  mkdir -p "maintenance/backups/20261023T061043Z"
+  mv "transaction-latency/.git" "maintenance/backups/20261023T061043Z/transaction-latency.git"
+  git add "transaction-latency"
+  git commit -m "chore(monorepo): absorb transaction-latency and archive nested .git metadata"

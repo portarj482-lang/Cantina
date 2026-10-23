@@ -17,3 +17,9 @@
 - All filesystem operations are bounded by `target_context.target_root` or `workspace_root`.
 - Strict path containment (`Path.is_relative_to`) must be enforced on all inputs.
 - Cross-target scope contamination is strictly prohibited. Standalone targets outside `bounties/` must evaluate without inheriting alien bounty scopes.
+
+## 4. Monorepo Hygiene & Nested Repository Invariants
+- Never commit loose `.git` directories or unmanaged nested repositories into the workspace.
+- Repositories > 50MB must be tracked via `.gitmodules` as canonical Git submodules.
+- First-party packages < 5MB absorbed into the monorepo must have their historical `.git` metadata preserved in `maintenance/backups/<timestamp>/`.
+- Tracked runtime files (`.env`, `node_modules/`, `*.so`, `__pycache__`, `*.log`) are strictly prohibited; `make audit` must pass before any release commit.

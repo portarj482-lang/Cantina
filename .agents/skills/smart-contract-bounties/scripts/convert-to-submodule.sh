@@ -66,8 +66,8 @@ if [ "$DRY_RUN" -eq 1 ]; then
     echo "Commands that will run with --confirm:"
     echo "  mkdir -p \"$BACKUP_DIR\""
     echo "  cp -r \"$TARGET_PATH/.git\" \"$BACKUP_DIR/${NAME}.git.bak\""
-    echo "  rm -rf \"$TARGET_PATH/.git\""
     echo "  git submodule add --name \"$NAME\" \"$REMOTE_URL\" \"$TARGET_PATH\""
+    echo "  git submodule absorbgitdirs \"$TARGET_PATH\""
     echo "  git commit -m \"chore(submodules): register $TARGET_PATH as git submodule\""
     exit 0
 fi
@@ -76,9 +76,9 @@ echo ""
 echo "[MODE] Executing submodule conversion..."
 mkdir -p "$BACKUP_DIR"
 cp -r "$TARGET_PATH/.git" "$BACKUP_DIR/${NAME}.git.bak"
-rm -rf "$TARGET_PATH/.git"
 
 git submodule add --name "$NAME" "$REMOTE_URL" "$TARGET_PATH"
+git submodule absorbgitdirs "$TARGET_PATH"
 git add .gitmodules "$TARGET_PATH"
 git commit -m "chore(submodules): register $TARGET_PATH as git submodule"
 

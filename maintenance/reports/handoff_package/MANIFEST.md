@@ -101,3 +101,39 @@ git submodule status
 - **scripts/run-scanner.sh**: Safe scanner execution harness with dry-run protection.
 - **global/tooling.md**: Synchronized tool statuses and versions with automated census.
 - **maintenance/runbook-remediation.md**: Added operational procedures for scope and scanner automation.
+
+
+---
+
+## 5. Security Toolchain Installation & Build Remediation (Commit `27572cc`)
+
+**Execution Date:** 2026-10-23  
+**Lead:** Toolchain Installer & Environment Lead / Recursive Sentinel  
+
+### Operational Scanner Suite
+- **Static Analysis & Linters:**
+  - `slither` v0.11.6 (Trail of Bits) — `~/.local/bin/slither` [OK]
+  - `aderyn` v0.6.8 (Cyfrin) — `~/.local/bin/aderyn` [OK]
+  - `semgrep` v1.182.1 (Semgrep Inc.) — `~/.local/bin/semgrep` [OK]
+  - `solhint` v6.2.5 — `/usr/local/bin/solhint` [OK]
+- **Fuzzers & Symbolic Engines:**
+  - `halmos` v0.3.3 (Foundry symbolic testing + Z3 Solver 4.12.6.0) — `~/.local/bin/halmos` [OK]
+  - `myth` v0.24.8 (Mythril symbolic execution) — `~/.local/bin/myth` [OK]
+  - `echidna` v2.3.3 (Crytic property fuzzer) — `~/.local/bin/echidna` [OK]
+  - `medusa` v1.5.1 (Crytic parallel fuzzer) — `~/.local/bin/medusa` [OK]
+- **Decompilers, Compilers & Frameworks:**
+  - `forge` v1.8.5 — Foundry suite [OK]
+  - `anchor` v1.0.0 — Solana Anchor framework [OK]
+  - `heimdall` v0.9.2 (Jon-Becker bytecode decompiler) — `~/.local/bin/heimdall` [OK]
+  - `solc` v0.8.20 (managed by `solc-select` v1.2.0) — `~/.local/bin/solc` [OK]
+  - `tsc` v7.0.2 (TypeScript compiler) — `/usr/local/bin/tsc` [PRESENT]
+
+### System Daemons & RPC Tools
+- `rpcbind` & `rpcinfo` v1.2.6-7 — Active daemon binding port 111 [PRESENT]
+- `rpcclient` v4.19.5-Ubuntu — SMB/RPC client via `smbclient` [PRESENT]
+- `ufw` v0.36.2 — Managed firewall [PRESENT]
+
+### Security Mesh Build & Registry Self-Healing
+- Fixed syntax corruption in `security-mesh/security-mesh/src/agents/registry.ts`.
+- Verified TypeScript compilation (`tsc -p tsconfig.json`).
+- Verified Vitest suite: 12/12 test files passing (76 unit tests passed, 3 integration tests skipped).

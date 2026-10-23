@@ -19,3 +19,6 @@
 [submodule "ulxly-contracts"]
 	path = bounties/agglayer/ulxly-contracts
 	url = https://github.com/agglayer/ulxly-contracts.git
+[submodule "uniswap-hooks"]
+	path = bounties/Revert v4lend Competition/lib/uniswap-hooks
+	url = https://github.com/openzeppelin/uniswap-hooks

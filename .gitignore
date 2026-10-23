@@ -20,11 +20,13 @@ Cargo.lock
 dist/
 build/
 artifacts/
+bounties/*/build/
+foundry-execution-engine/runs/
 *.so
 *.dylib
 *.dll
 
-# Dependencies and caches
+# Dependencies and compilation caches
 node_modules/
 cache/
 out/
@@ -36,8 +38,13 @@ broadcast/
 .vscode/
 *.swp
 *.tmp
+
+# Logs & scratch
+logs/
 *.log
 *.pid
+scratch/
+perception_mesh_log.jsonl
 
 # Local environment & secrets
 .env

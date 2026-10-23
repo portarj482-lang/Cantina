@@ -49,3 +49,6 @@
 [submodule "base-anvil"]
 	path = base-anvil
 	url = https://github.com/base/base-anvil.git
+[submodule "MagicSpend"]
+	path = bounties/base/MagicSpend
+	url = https://github.com/coinbase/MagicSpend.git

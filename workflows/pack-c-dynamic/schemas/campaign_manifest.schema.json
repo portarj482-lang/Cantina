@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CampaignManifest",
+  "description": "Structured Echidna campaign manifest under Glassbox Mirror Plane Orchestration",
+  "type": "object",
+  "required": [
+    "run_id",
+    "repository_revision",
+    "target",
+    "compiler_version",
+    "configuration_digest",
+    "binary_digest",
+    "seed",
+    "resource_limits",
+    "start_time",
+    "end_time",
+    "process_exit_status",
+    "campaign_outcome",
+    "property_results",
+    "artifact_refs",
+    "verification_status",
+    "limitations"
+  ],
+  "anyOf": [
+    { "required": ["echidna_version"] },
+    { "required": ["medusa_version"] },
+    { "required": ["tool_version"] }
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "default": "2.0.0"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "repository_revision": {
+      "type": "string"
+    },
+    "target": {
+      "type": "string"
+    },
+    "echidna_version": {
+      "type": "string"
+    },
+    "medusa_version": {
+      "type": "string"
+    },
+    "tool_version": {
+      "type": "string"
+    },
+    "compiler_version": {
+      "type": "string"
+    },
+    "configuration_digest": {
+      "type": "string"
+    },
+    "binary_digest": {
+      "type": ["string", "null"]
+    },
+    "seed": {
+      "type": ["integer", "null"]
+    },
+    "resource_limits": {
+      "type": "object",
+      "properties": {
+        "timeout_seconds": { "type": "integer" },
+        "test_limit": { "type": ["integer", "null"] },
+        "shrink_limit": { "type": ["integer", "null"] },
+        "seq_len": { "type": ["integer", "null"] },
+        "workers": { "type": ["integer", "null"] }
+      },
+      "required": ["timeout_seconds"]
+    },
+    "start_time": {
+      "type": "string"
+    },
+    "end_time": {
+      "type": "string"
+    },
+    "process_exit_status": {
+      "type": "integer"
+    },
+    "campaign_outcome": {
+      "type": "string",
+      "enum": [
+        "PREFLIGHT_PASSED",
+        "COMPLETED_VERIFIED",
+        "COMPLETED_WITH_FINDINGS",
+        "EXECUTION_FAILED",
+        "TIMED_OUT",
+        "CANCELLED",
+        "INCONCLUSIVE"
+      ]
+    },
+    "property_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "property_name": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["passed", "falsified", "error", "skipped"]
+          },
+          "counterexample": {
+            "type": ["object", "array", "null"]
+          },
+          "calls_count": { "type": ["integer", "null"] },
+          "error_message": { "type": ["string", "null"] }
+        },
+        "required": ["property_name", "status"]
+      }
+    },
+    "artifact_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": [
+        "NOT_STARTED",
+        "PREFLIGHT_PASSED",
+        "IN_PROGRESS",
+        "BLOCKED",
+        "FAILED",
+        "COMPLETED_WITH_LIMITATIONS",
+        "COMPLETED_VERIFIED"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}

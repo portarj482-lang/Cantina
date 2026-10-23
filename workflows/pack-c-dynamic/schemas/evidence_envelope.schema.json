@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvidenceEnvelope",
+  "description": "Cryptographically bounded evidence envelope under Glassbox Mirror Plane Orchestration",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "envelope_id",
+    "workflow",
+    "slug",
+    "run_id",
+    "status",
+    "evidence_type",
+    "manifest",
+    "digests",
+    "provenance",
+    "timestamp"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "default": "2.0.0"
+    },
+    "envelope_id": {
+      "type": "string"
+    },
+    "workflow": {
+      "type": "string",
+      "default": "pack-c-dynamic"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "evidence_type": {
+      "type": "string"
+    },
+    "manifest": {
+      "type": "object"
+    },
+    "digests": {
+      "type": "object",
+      "properties": {
+        "payload_sha256": { "type": "string" },
+        "raw_stdout_sha256": { "type": "string" },
+        "raw_stderr_sha256": { "type": "string" },
+        "target_source_sha256": { "type": "string" }
+      },
+      "required": ["payload_sha256"]
+    },
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "host": { "type": "string" },
+        "git_commit": { "type": "string" },
+        "echidna_version": { "type": "string" },
+        "medusa_version": { "type": "string" },
+        "tool_version": { "type": "string" },
+        "solc_version": { "type": "string" }
+      },
+      "required": ["git_commit"],
+      "anyOf": [
+        { "required": ["echidna_version"] },
+        { "required": ["medusa_version"] },
+        { "required": ["tool_version"] }
+      ]
+    },
+    "timestamp": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

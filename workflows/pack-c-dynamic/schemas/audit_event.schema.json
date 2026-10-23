@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AuditEvent",
+  "description": "Structured audit event record under Glassbox Mirror Plane Orchestration",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "event_type",
+    "run_id",
+    "stage",
+    "actor",
+    "action",
+    "status",
+    "details",
+    "timestamp"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "default": "2.0.0"
+    },
+    "event_id": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "stage": {
+      "type": "string"
+    },
+    "actor": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    },
+    "timestamp": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

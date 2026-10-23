@@ -136,9 +136,13 @@ class GateDecisionContract:
     evaluator: str
     audit_reference: str
     timestamp: str
+    evidence_refs: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        d = asdict(self)
+        if not self.evidence_refs:
+            d.pop("evidence_refs", None)
+        return d
 
     def validate(self) -> None:
         schema = load_schema("gate_decision_contract.schema.json")
@@ -163,3 +167,28 @@ class StageResult:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass
+class MeshTaskEnvelope:
+    schema_version: str
+    task_id: str
+    run_id: str
+    agent_id: str
+    capability: str
+    state: str
+    scope: dict[str, Any]
+    inputs: list[dict[str, Any]]
+    outputs: list[dict[str, Any]]
+    claims: list[dict[str, Any]]
+    limitations: list[str]
+    parent_task_id: Optional[str] = None
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def validate(self) -> None:
+        schema = load_schema("mesh_task_envelope.schema.json")
+        jsonschema.validate(instance=self.to_dict(), schema=schema)

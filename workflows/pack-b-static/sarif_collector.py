@@ -147,6 +147,18 @@ class UOOMASarifCollector:
 
         for p in sorted(self.scan_dir.rglob("*")):
             if p.is_file() and p.name not in ["normalized_sarif.json", "receipt.json"] and not p.name.startswith(".tmp."):
+                # Ignore metadata files and run history directories
+                if any(part in {"runs", "evidence", "hypotheses", "findings"} for part in p.parts):
+                    continue
+                if p.name in {
+                    "evidence_envelope.json", "manifest.json", "request.normalized.json",
+                    "inputs.inventory.json", "execution.plan.json", "provenance.manifest.json",
+                    "verification.report.json", "reconciliation.report.json", "analysis.intermediate.json",
+                    "admission.decision.json", "schema-report.json", "coverage-report.json",
+                    "verification-report.json"
+                }:
+                    continue
+
                 # Check for symlink escape
                 if p.is_symlink():
                     resolved = p.resolve()

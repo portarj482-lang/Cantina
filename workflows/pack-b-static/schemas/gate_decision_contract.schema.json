@@ -47,7 +47,11 @@
         "ACCEPTED_WITH_LIMITATIONS",
         "REJECTED",
         "QUARANTINED",
-        "BLOCKED"
+        "BLOCKED",
+        "PASS",
+        "FAIL",
+        "NOT_RUN",
+        "NOT_APPLICABLE"
       ]
     },
     "rationale": {
@@ -61,6 +65,10 @@
     },
     "audit_reference": {
       "type": "string"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "type": "string" }
     },
     "timestamp": {
       "type": "string"

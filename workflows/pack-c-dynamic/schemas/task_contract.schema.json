@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TaskContract",
+  "description": "Structured task contract governing specialist agent lifecycle under Glassbox Mirror Plane Orchestration",
+  "type": "object",
+  "required": [
+    "task_id",
+    "goal",
+    "status",
+    "owner",
+    "dependencies",
+    "inputs",
+    "permissions_required",
+    "acceptance_criteria",
+    "expected_artifacts",
+    "attempt_count",
+    "evidence_refs",
+    "blocker",
+    "tests",
+    "limitations",
+    "next_action"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "default": "2.0.0"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "goal": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "NOT_STARTED",
+        "PLANNED",
+        "IN_PROGRESS",
+        "BLOCKED",
+        "FAILED",
+        "COMPLETED_WITH_LIMITATIONS",
+        "COMPLETED_VERIFIED"
+      ]
+    },
+    "owner": {
+      "type": "string"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "inputs": {
+      "type": "object"
+    },
+    "permissions_required": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "expected_artifacts": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "attempt_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "blocker": {
+      "type": ["string", "null"]
+    },
+    "tests": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "next_action": {
+      "type": ["string", "null"]
+    }
+  },
+  "additionalProperties": false
+}

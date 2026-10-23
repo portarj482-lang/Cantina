@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GateDecisionContract",
+  "description": "Gate decision contract for admission and audit under Glassbox Mirror Plane Orchestration",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "gate_id",
+    "gate_name",
+    "required_checks",
+    "passed_checks",
+    "failed_checks",
+    "decision",
+    "rationale",
+    "proposer",
+    "evaluator",
+    "audit_reference",
+    "timestamp"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "default": "2.0.0"
+    },
+    "gate_id": {
+      "type": "string"
+    },
+    "gate_name": {
+      "type": "string"
+    },
+    "required_checks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "passed_checks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "failed_checks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["PASS", "FAIL", "BLOCKED", "VETOED"]
+    },
+    "rationale": {
+      "type": "string"
+    },
+    "proposer": {
+      "type": "string"
+    },
+    "evaluator": {
+      "type": "string"
+    },
+    "audit_reference": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

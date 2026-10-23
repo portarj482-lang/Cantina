@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FindingContract",
+  "description": "Structured security finding contract under Glassbox Mirror Plane Orchestration",
+  "type": "object",
+  "required": [
+    "finding_id",
+    "title",
+    "status",
+    "source_refs",
+    "affected_versions",
+    "locations",
+    "security_property",
+    "preconditions",
+    "root_cause",
+    "impact",
+    "exploitability",
+    "reproduction_refs",
+    "counterevidence_refs",
+    "fix_refs",
+    "regression_results",
+    "confidence",
+    "unresolved_assumptions"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "default": "2.0.0"
+    },
+    "finding_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "OBSERVED",
+        "DERIVED",
+        "HYPOTHESIS",
+        "UNVERIFIED",
+        "REFUTED",
+        "SUPERSEDED",
+        "VERIFIED"
+      ]
+    },
+    "source_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "affected_versions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "locations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "contract": { "type": "string" },
+          "function": { "type": "string" },
+          "start_line": { "type": "integer" },
+          "end_line": { "type": "integer" }
+        },
+        "required": ["path"]
+      }
+    },
+    "security_property": {
+      "type": "string"
+    },
+    "preconditions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "root_cause": {
+      "type": "string"
+    },
+    "impact": {
+      "type": "string",
+      "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFORMATIONAL", "NONE"]
+    },
+    "exploitability": {
+      "type": "string",
+      "enum": ["PROVEN", "HIGH", "MEDIUM", "LOW", "THEORETICAL", "NONE"]
+    },
+    "reproduction_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "counterevidence_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "fix_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "regression_results": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["CERTAIN", "HIGH", "MEDIUM", "LOW", "UNCERTAIN"]
+    },
+    "unresolved_assumptions": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}

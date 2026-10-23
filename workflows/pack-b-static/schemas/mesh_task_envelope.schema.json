@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MeshTaskEnvelope",
+  "description": "Governs typed inter-agent task messages and evidence references across the specialist agent mesh.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "task_id",
+    "run_id",
+    "agent_id",
+    "capability",
+    "state",
+    "scope",
+    "inputs",
+    "outputs",
+    "claims",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0", "1.0.0"]
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "parent_task_id": {
+      "type": ["string", "null"]
+    },
+    "agent_id": {
+      "type": "string"
+    },
+    "capability": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string",
+      "enum": ["PENDING", "IN_PROGRESS", "COMPLETED", "FAILED", "BLOCKED", "CANCELLED"]
+    },
+    "scope": {
+      "type": "object"
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["artifact_id"],
+        "properties": {
+          "artifact_id": { "type": "string" },
+          "digest": { "type": "string" },
+          "media_type": { "type": "string" }
+        }
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["artifact_id"],
+        "properties": {
+          "artifact_id": { "type": "string" },
+          "digest": { "type": "string" },
+          "media_type": { "type": "string" }
+        }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim", "evidence_refs", "status"],
+        "properties": {
+          "claim": { "type": "string" },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "status": {
+            "type": "string",
+            "enum": ["SUPPORTED", "UNSUBSTANTIATED", "REFUTED"]
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "started_at": {
+      "type": ["string", "null"]
+    },
+    "completed_at": {
+      "type": ["string", "null"]
+    }
+  }
+}

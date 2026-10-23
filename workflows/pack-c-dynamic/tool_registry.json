@@ -1,0 +1,384 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "registry_version": "2.0.0",
+  "system": "Glassbox Mirror Plane / Universal Adaptive Engineering",
+  "workflow": "pack-c-dynamic",
+  "tools": [
+    {
+      "tool_id": "repo.inspect",
+      "version": "1.0.0",
+      "capability_category": "discovery",
+      "status": "VERIFIED",
+      "description": "Read authorized repository files, revisions, tree structure, and Git state within repository containment.",
+      "implementation_reference": "git / POSIX filesystem inspection API",
+      "permissions_required": ["filesystem.read"],
+      "network_access": false,
+      "subprocess_execution": true,
+      "risk_classification": "LOW",
+      "resource_limits": {
+        "timeout_seconds": 30,
+        "max_output_bytes": 10485760
+      },
+      "retry_policy": {
+        "max_attempts": 2,
+        "idempotent": true
+      }
+    },
+    {
+      "tool_id": "registry.discover",
+      "version": "1.0.0",
+      "capability_category": "governance",
+      "status": "VERIFIED",
+      "description": "Enumerate installed tools, schemas, versions, permissions, and status classifications across workspace.",
+      "implementation_reference": "workflows/pack-c-dynamic/tool_registry.json",
+      "permissions_required": ["filesystem.read"],
+      "network_access": false,
+      "subprocess_execution": false,
+      "risk_classification": "LOW",
+      "resource_limits": {
+        "timeout_seconds": 10
+      },
+      "retry_policy": {
+        "max_attempts": 1,
+        "idempotent": true
+      }
+    },
+    {
+      "tool_id": "adapter.foundry",
+      "version": "2.0.0",
+      "capability_category": "adapter",
+      "status": "VERIFIED",
+      "description": "Python CLI adapter governing Foundry unit test execution, dry-run precedence, and atomic receipts.",
+      "implementation_reference": ".agents/skills/qrpe/adapters/foundry_adapter.py",
+      "permissions_required": ["filesystem.read", "filesystem.write", "subprocess.exec"],
+      "network_access": false,
+      "subprocess_execution": true,
+      "risk_classification": "MEDIUM",
+      "resource_limits": {
+        "timeout_seconds": 120
+      },
+      "retry_policy": {
+        "max_attempts": 2,
+        "idempotent": true
+      }
+    },
+    {
+      "tool_id": "workflow.forge_fuzz",
+      "version": "1.0.0",
+      "capability_category": "orchestration",
+      "status": "VERIFIED",
+      "description": "Bounded Forge fuzz testing workflow runner with strict argument parsing, path containment, dry-run precedence, and testFuzz_ filter.",
+      "implementation_reference": "workflows/pack-c-dynamic/workflow-fuzz.sh",
+      "permissions_required": ["filesystem.read", "filesystem.write", "subprocess.exec"],
+      "network_access": false,
+      "subprocess_execution": true,
+      "risk_classification": "MEDIUM",
+      "resource_limits": {
+        "timeout_seconds": 120
+      },
+      "retry_policy": {
+        "max_attempts": 1,
+        "idempotent": true
+      }
+    },
+    {
+      "tool_id": "shell.execute",
+      "version": "1.0.0",
+      "capability_category": "execution",
+      "status": "VERIFIED",
+      "description": "Run bounded shell commands through argument arrays and strict execution boundary without shell interpolation.",
+      "implementation_reference": "workflows/pack-c-dynamic/workflow-foundry-tests.sh",
+      "permissions_required": ["subprocess.exec"],
+      "network_access": false,
+      "subprocess_execution": true,
+      "risk_classification": "MEDIUM",
+      "resource_limits": {
+        "timeout_seconds": 180
+      },
+      "retry_policy": {
+        "max_attempts": 1,
+        "idempotent": false
+      }
+    },
+    {
+      "tool_id": "schema.validate",
+      "version": "2.0.0",
+      "capability_category": "governance",
+      "status": "VERIFIED",
+      "description": "Validate task, finding, evidence envelope, and campaign contracts against JSON schemas.",
+      "implementation_reference": "workflows/pack-c-dynamic/echidna_contracts.py",
+      "permissions_required": ["filesystem.read"],
+      "network_access": false,
+      "subprocess_execution": false,
+      "risk_classification": "LOW",
+      "resource_limits": {
+        "timeout_seconds": 15
+      },
+      "retry_policy": {
+        "max_attempts": 1,
+        "idempotent": true
+      }
+    },
+    {
+      "tool_id": "solidity.parse",
+      "version": "1.0.0",
+      "capability_category": "analysis",
+      "status": "AVAILABLE",
+      "description": "Parse Solidity source code to generate ASTs, tokens, and source mappings.",
+      "implementation_reference": "solc / slither AST exporter",
+      "permissions_required": ["filesystem.read", "subprocess.exec"],
+      "network_access": false,
+      "subprocess_execution": true,
+      "risk_classification": "LOW",
+      "resource_limits": {
+        "timeout_seconds": 60
+      },
+      "retry_policy": {
+        "max_attempts": 1,
+        "idempotent": true
+      }
+    },
+    {
+      "tool_id": "foundry.test",
+      "version": "1.8.5",
+      "capability_category": "verification",
+      "status": "VERIFIED",
+      "description": "Execute deterministic Forge test suites, capture isolated stdout/stderr, and compute artifact digests.",
+      "implementation_reference": "/home/nova/.foundry/bin/forge test",
+      "permissions_required": ["filesystem.read", "filesystem.write", "subprocess.exec"],
+      "network_access": false,
+      "subprocess_execution": true,
+      "risk_classification": "MEDIUM",
+      "resource_limits": {
+        "timeout_seconds": 120
+      },
+      "retry_policy": {
+        "max_attempts": 1,
+        "idempotent": true
+      }
+    },
+    {
+      "tool_id": "security.analyze",
+      "version": "1.0.0",
+      "capability_category": "analysis",
+      "status": "VERIFIED",
+      "description": "Static security analysis and candidate vulnerability detection across contracts.",
+      "implementation_reference": "workflows/pack-b-static/slither_orchestrator.py",
+      "permissions_required": ["filesystem.read", "filesystem.write", "subprocess.exec"],
+      "network_access": false,
+      "subprocess_execution": true,
+      "risk_classification": "MEDIUM",
+      "resource_limits": {
+        "timeout_seconds": 300
+      },
+      "retry_policy": {
+        "max_attempts": 1,
+        "idempotent": true
+      }
+    },
+    {
+      "tool_id": "verification.symbolic",
+      "version": "1.0.0",
+      "capability_category": "verification",
+      "status": "AVAILABLE",
+      "description": "Symbolic invariant verification and constraint solving via Halmos / SMT solver.",
+      "implementation_reference": ".agents/skills/qrpe/adapters/halmos_adapter.py",
+      "permissions_required": ["filesystem.read", "filesystem.write", "subprocess.exec"],
+      "network_access": false,
+      "subprocess_execution": true,
+      "risk_classification": "MEDIUM",
+      "resource_limits": {
+        "timeout_seconds": 180
+      },
+      "retry_policy": {
+        "max_attempts": 1,
+        "idempotent": true
+      }
+    },
+    {
+      "tool_id": "evidence.store",
+      "version": "2.0.0",
+      "capability_category": "provenance",
+      "status": "VERIFIED",
+      "description": "Persist provenance-linked evidence envelopes, receipts, and content digests with atomic writes.",
+      "implementation_reference": "workflows/pack-c-dynamic/echidna_contracts.py:EvidenceEnvelope",
+      "permissions_required": ["filesystem.write"],
+      "network_access": false,
+      "subprocess_execution": false,
+      "risk_classification": "LOW",
+      "resource_limits": {
+        "timeout_seconds": 15
+      },
+      "retry_policy": {
+        "max_attempts": 2,
+        "idempotent": true
+      }
+    },
+    {
+      "tool_id": "task.ledger",
+      "version": "2.0.0",
+      "capability_category": "orchestration",
+      "status": "VERIFIED",
+      "description": "Authoritative task tracking, dependency resolution, retry tracking, and status transitions.",
+      "implementation_reference": "workflows/pack-c-dynamic/schemas/task_contract.schema.json",
+      "permissions_required": ["filesystem.read", "filesystem.write"],
+      "network_access": false,
+      "subprocess_execution": false,
+      "risk_classification": "LOW",
+      "resource_limits": {
+        "timeout_seconds": 10
+      },
+      "retry_policy": {
+        "max_attempts": 2,
+        "idempotent": true
+      }
+    },
+    {
+      "tool_id": "review.independent",
+      "version": "1.0.0",
+      "capability_category": "challenge",
+      "status": "VERIFIED",
+      "description": "Adversarial negative controls, counterexample falsification, and independent challenger review.",
+      "implementation_reference": ".agents/skills/verification-agent/SKILL.md",
+      "permissions_required": ["filesystem.read", "subprocess.exec"],
+      "network_access": false,
+      "subprocess_execution": true,
+      "risk_classification": "MEDIUM",
+      "resource_limits": {
+        "timeout_seconds": 120
+      },
+      "retry_policy": {
+        "max_attempts": 1,
+        "idempotent": true
+      }
+    },
+    {
+      "tool_id": "policy.admit",
+      "version": "1.0.0",
+      "capability_category": "governance",
+      "status": "VERIFIED",
+      "description": "Admission controller enforcing mandatory security gates, scope compliance, and fail-closed veto.",
+      "implementation_reference": "workflows/pack-c-dynamic/echidna_contracts.py:GateDecisionContract",
+      "permissions_required": ["filesystem.read"],
+      "network_access": false,
+      "subprocess_execution": false,
+      "risk_classification": "CRITICAL",
+      "resource_limits": {
+        "timeout_seconds": 10
+      },
+      "retry_policy": {
+        "max_attempts": 1,
+        "idempotent": true
+      }
+    },
+    {
+      "tool_id": "release.stage",
+      "version": "1.0.0",
+      "capability_category": "deployment",
+      "status": "CONDITIONAL",
+      "description": "Stage verified artifacts in staging environment subject to explicit release authorization.",
+      "implementation_reference": "Deployment authority gate (external)",
+      "permissions_required": ["filesystem.write", "authorization.release"],
+      "network_access": false,
+      "subprocess_execution": true,
+      "risk_classification": "HIGH",
+      "resource_limits": {
+        "timeout_seconds": 60
+      },
+      "retry_policy": {
+        "max_attempts": 1,
+        "idempotent": true
+      }
+    },
+    {
+      "tool_id": "release.rollback",
+      "version": "1.0.0",
+      "capability_category": "deployment",
+      "status": "CONDITIONAL",
+      "description": "Restore prior verified state and verify rollback integrity through cryptographic receipts.",
+      "implementation_reference": "Recovery supervisor",
+      "permissions_required": ["filesystem.write", "authorization.rollback"],
+      "network_access": false,
+      "subprocess_execution": true,
+      "risk_classification": "HIGH",
+      "resource_limits": {
+        "timeout_seconds": 60
+      },
+      "retry_policy": {
+        "max_attempts": 1,
+        "idempotent": true
+      }
+    },
+    {
+      "tool_id": "adapter.medusa",
+      "version": "2.0.0",
+      "capability_category": "adapter",
+      "status": "VERIFIED",
+      "description": "Python CLI adapter governing Medusa dynamic property fuzzing execution, dry-run precedence, and atomic receipts.",
+      "implementation_reference": ".agents/skills/qrpe/adapters/medusa_adapter.py",
+      "permissions_required": ["filesystem.read", "filesystem.write", "subprocess.exec"],
+      "network_access": false,
+      "subprocess_execution": true,
+      "risk_classification": "MEDIUM",
+      "resource_limits": {
+        "timeout_seconds": 1800
+      },
+      "retry_policy": {
+        "max_attempts": 1,
+        "idempotent": false
+      }
+    },
+    {
+      "tool_id": "workflow.medusa",
+      "version": "2.0.0",
+      "capability_category": "orchestration",
+      "status": "VERIFIED",
+      "description": "Production-grade Glassbox Mirror Plane Medusa dynamic property fuzzing workflow wrapper with fail-closed governance and strict path containment.",
+      "implementation_reference": "workflows/pack-c-dynamic/workflow-medusa.sh",
+      "permissions_required": ["filesystem.read", "filesystem.write", "subprocess.exec"],
+      "network_access": false,
+      "subprocess_execution": true,
+      "risk_classification": "MEDIUM",
+      "resource_limits": {
+        "timeout_seconds": 1800
+      },
+      "retry_policy": {
+        "max_attempts": 1,
+        "idempotent": false
+      }
+    },
+    {
+      "tool_id": "medusa.fuzz",
+      "version": "1.5.1",
+      "capability_category": "execution",
+      "status": "VERIFIED",
+      "description": "Solidity smart contract property-based parallel dynamic fuzzing engine.",
+      "implementation_reference": "medusa fuzz",
+      "permissions_required": ["filesystem.read", "filesystem.write", "subprocess.exec"],
+      "network_access": false,
+      "subprocess_execution": true,
+      "risk_classification": "MEDIUM",
+      "resource_limits": {
+        "timeout_seconds": 1800
+      },
+      "retry_policy": {
+        "max_attempts": 1,
+        "idempotent": false
+      }
+    }
+  ],
+  "envelope_template": {
+    "tool_id": "string",
+    "tool_version": "string",
+    "request_id": "string (UUIDv4 or task-id)",
+    "mode": "dry_run | confirmed",
+    "authorized_scope": {
+      "repository": "string",
+      "target": "relative/path"
+    },
+    "inputs": {},
+    "resource_limits": {
+      "timeout_seconds": 120
+    }
+  }
+}

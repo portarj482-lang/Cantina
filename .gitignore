@@ -2,22 +2,60 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info/
 .pytest_cache/
-*.swp
-*.tmp
+.coverage
+htmlcov/
+.tox/
+.nox/
+.venv/
+venv/
+ENV/
+
+# Rust / Cargo build outputs
+target/
+Cargo.lock
+
+# Build, distribution and binary artifacts
+dist/
+build/
+artifacts/
+*.so
+*.dylib
+*.dll
+
+# Dependencies and caches
 node_modules/
 cache/
 out/
+broadcast/
+
+# IDE and OS transient files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.tmp
+*.log
+*.pid
+
+# Local environment & secrets
 .env
 *.env
+.env.local
 !.env.example
 
 # Local Postgres runtime and data
 /data/
+/*/data/
 /data/postmaster.pid
 /data/pg_wal/
+/*/pg_wal/
 /data/base/
-/*.pid
 /security-mesh/data/
 /security-mesh/dist/
+
+# Maintenance backups
+maintenance/backups/
+
 

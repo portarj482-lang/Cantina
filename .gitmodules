@@ -7,3 +7,6 @@
 [submodule "eip-7702-proxy"]
 	path = bounties/base/eip-7702-proxy
 	url = https://github.com/base/eip-7702-proxy.git
+[submodule "smart-wallet"]
+	path = bounties/base/smart-wallet
+	url = https://github.com/coinbase/smart-wallet.git

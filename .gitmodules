@@ -58,3 +58,6 @@
 [submodule "vault-bridge"]
 	path = bounties/agglayer/vault-bridge
 	url = https://github.com/agglayer/vault-bridge.git
+[submodule "base-mcp-legacy"]
+	path = base-mcp-legacy
+	url = https://github.com/base/base-mcp-legacy.git

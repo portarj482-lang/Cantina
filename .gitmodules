@@ -25,3 +25,6 @@
 [submodule "bold"]
 	path = bounties/liquity/bold
 	url = https://github.com/liquity/bold.git
+[submodule "ai-cookbook"]
+	path = ai-cookbook
+	url = https://github.com/temporalio/ai-cookbook.git

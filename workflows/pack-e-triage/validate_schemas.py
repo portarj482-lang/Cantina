@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""JSON Schema Validator for Pack E Triage Artifacts.
+"""JSON Schema Validator for Pack E Triage and Pack A Pathway Scout Artifacts.
 
 Validates:
   1. hallucination_audit.json against schemas/hallucination_audit.schema.json
   2. hallucination_audit.provenance.json against schemas/hallucination_audit.provenance.schema.json
   3. overlap_analysis.json against schemas/overlap_analysis.schema.json
   4. triage_summary.json against schemas/triage_summary.schema.json
+  5. pathways.json against pack-a-pathway-scout/schemas/pathways.schema.json
 
 Usage:
-  python3 validate_schemas.py [--dir /path/to/scans] [--audit /path/to/audit.json] [--provenance /path/to/provenance.json] [--overlap /path/to/overlap.json] [--triage /path/to/triage_summary.json]
+  python3 validate_schemas.py [--dir /path/to/scans] [--audit /path/to/audit.json] \
+      [--provenance /path/to/provenance.json] [--overlap /path/to/overlap.json] \
+      [--triage /path/to/triage_summary.json] [--pathways /path/to/pathways.json]
 
 Exit codes:
   0 - Artifacts are valid JSON and conform to their schemas.
@@ -117,6 +120,74 @@ def validate_artifact(data: dict, schema: dict, name: str, artifact_type: str) -
                 return False, "Triage summary 'candidates' field must be a list"
             if not isinstance(data.get("provenance"), dict):
                 return False, "Triage summary 'provenance' field must be an object"
+        elif artifact_type == "pathways":
+            req_pathways = [
+                "schema_version",
+                "slug",
+                "status",
+                "timestamp",
+                "repository",
+                "execution",
+                "scope",
+                "inventory",
+                "pathways",
+                "priority_review_queue",
+                "analysis",
+                "findings",
+                "completion",
+            ]
+            for field in req_pathways:
+                if field not in data:
+                    return False, f"Pathways artifact missing required field: {field}"
+            if not isinstance(data.get("repository"), dict):
+                return False, "Pathways 'repository' field must be an object"
+            for f in ["root", "commit", "worktree_clean"]:
+                if f not in data["repository"]:
+                    return False, f"Pathways repository missing field: {f}"
+            if not isinstance(data.get("execution"), dict):
+                return False, "Pathways 'execution' field must be an object"
+            for f in ["mode", "write_authorized"]:
+                if f not in data["execution"]:
+                    return False, f"Pathways execution missing field: {f}"
+            if not isinstance(data.get("scope"), dict):
+                return False, "Pathways 'scope' field must be an object"
+            for f in ["status", "in_scope_assets", "out_of_scope_assets", "assumptions", "limitations"]:
+                if f not in data["scope"]:
+                    return False, f"Pathways scope missing field: {f}"
+            if not isinstance(data.get("inventory"), dict):
+                return False, "Pathways 'inventory' field must be an object"
+            for f in ["source_roots", "contracts", "programs", "entrypoints", "external_dependencies"]:
+                if f not in data["inventory"]:
+                    return False, f"Pathways inventory missing field: {f}"
+            if not isinstance(data.get("analysis"), dict):
+                return False, "Pathways 'analysis' field must be an object"
+            for f in ["tools", "tests", "coverage", "limitations"]:
+                if f not in data["analysis"]:
+                    return False, f"Pathways analysis missing field: {f}"
+            coverage = data["analysis"].get("coverage", {})
+            for f in ["entrypoints_total", "entrypoints_verified", "pathways_total", "pathways_verified"]:
+                if f not in coverage:
+                    return False, f"Pathways coverage missing field: {f}"
+            if not isinstance(data.get("completion"), dict):
+                return False, "Pathways 'completion' field must be an object"
+            for f in ["entrypoints_mapped", "pathways_mapped", "evidence_validated", "complete"]:
+                if f not in data["completion"]:
+                    return False, f"Pathways completion missing field: {f}"
+            valid_statuses = {"PATHWAYS_SCOUTED", "PARTIAL", "BLOCKED", "FAILED", "DRY_RUN"}
+            if data.get("status") not in valid_statuses:
+                return False, f"Pathways status '{data.get('status')}' is not a valid status"
+        elif artifact_type == "recon":
+            for f in ["slug", "contracts_found", "timestamp", "status"]:
+                if f not in data:
+                    return False, f"Reconnaissance artifact missing required field: {f}"
+            if not isinstance(data.get("contracts_found"), int) or data.get("contracts_found") < 0:
+                return False, "Reconnaissance 'contracts_found' must be a non-negative integer"
+            if data.get("status") not in {"RECON_COMPLETE", "RECON_PARTIAL", "RECON_BLOCKED", "RECON_FAILED"}:
+                return False, f"Reconnaissance 'status' must be valid enum, got: {data.get('status')}"
+            if "scope" in data and not isinstance(data["scope"], dict):
+                return False, "Reconnaissance 'scope' field must be an object"
+            if "inventory" in data and not isinstance(data["inventory"], list):
+                return False, "Reconnaissance 'inventory' field must be a list"
         elif artifact_type == "normalized":
             req_norm = ["slug", "normalized_findings", "timestamp", "status"]
             for field in req_norm:
@@ -138,6 +209,17 @@ def validate_artifact(data: dict, schema: dict, name: str, artifact_type: str) -
                     return False, f"Finding {finding['id']} target must be object containing slug"
                 if not isinstance(finding.get("provenance"), list):
                     return False, f"Finding {finding['id']} provenance must be a list"
+        elif artifact_type == "pin":
+            req_pin = ["slug", "scope_file", "scope_sha256", "timestamp", "status"]
+            for field in req_pin:
+                if field not in data:
+                    return False, f"Source pin missing required field: {field}"
+            if data.get("status") != "PIN_VERIFIED":
+                return False, f"Source pin 'status' must be PIN_VERIFIED, got: {data.get('status')}"
+            if not isinstance(data.get("scope_sha256"), str) or len(data.get("scope_sha256")) != 64:
+                return False, "Source pin 'scope_sha256' must be 64-char hexadecimal string"
+            if not isinstance(data.get("scope_file"), str) or not data.get("scope_file").endswith("/scope.md"):
+                return False, "Source pin 'scope_file' must be repository-relative scope path"
         return True, None
 
 
@@ -152,6 +234,9 @@ def main() -> int:
     parser.add_argument("--overlap", help="Explicit path to overlap_analysis.json")
     parser.add_argument("--triage", help="Explicit path to triage_summary.json")
     parser.add_argument("--normalized", help="Explicit path to findings_normalized.json")
+    parser.add_argument("--pathways", help="Explicit path to pathways.json (Pack A Pathway Scout)")
+    parser.add_argument("--recon", help="Explicit path to recon.json (Pack A Reconnaissance)")
+    parser.add_argument("--pin", help="Explicit path to pin.json (Pack A Source Pin)")
     parser.add_argument("--schemas-dir", help="Directory containing schema files (defaults to adjacent schemas/)")
 
     args = parser.parse_args()
@@ -159,11 +244,19 @@ def main() -> int:
     script_dir = Path(__file__).resolve().parent
     schemas_dir = Path(args.schemas_dir).resolve() if args.schemas_dir else (script_dir / "schemas")
 
+    # Pack A schemas live in sibling workflow directories
+    pack_a_pathways_schema_dir = script_dir.parent / "pack-a-pathway-scout" / "schemas"
+    pack_a_recon_schema_dir = script_dir.parent / "pack-a-recon" / "schemas"
+    pack_a_pin_schema_dir = script_dir.parent / "pack-a-source" / "schemas"
+
     audit_schema_path = schemas_dir / "hallucination_audit.schema.json"
     prov_schema_path = schemas_dir / "hallucination_audit.provenance.schema.json"
     overlap_schema_path = schemas_dir / "overlap_analysis.schema.json"
     triage_schema_path = schemas_dir / "triage_summary.schema.json"
     normalized_schema_path = schemas_dir / "findings_normalized.schema.json"
+    pathways_schema_path = pack_a_pathways_schema_dir / "pathways.schema.json"
+    recon_schema_path = pack_a_recon_schema_dir / "recon.schema.json"
+    pin_schema_path = pack_a_pin_schema_dir / "pin.schema.json"
 
     targets_to_validate: list[tuple[Path, Path, str]] = []
 
@@ -174,6 +267,8 @@ def main() -> int:
         overlap_path = scans_dir / "overlap_analysis.json"
         triage_path = scans_dir / "triage_summary.json"
         normalized_path = scans_dir / "findings_normalized.json"
+        recon_path = scans_dir / "recon.json"
+        pin_path = scans_dir / "pin.json"
 
         found_any = False
         if audit_path.is_file() and prov_path.is_file():
@@ -189,13 +284,29 @@ def main() -> int:
         if normalized_path.is_file():
             targets_to_validate.append((normalized_path, normalized_schema_path, "normalized"))
             found_any = True
+        if recon_path.is_file():
+            targets_to_validate.append((recon_path, recon_schema_path, "recon"))
+            found_any = True
+        if pin_path.is_file():
+            targets_to_validate.append((pin_path, pin_schema_path, "pin"))
+            found_any = True
 
         if not found_any:
             sys.stderr.write(f"Error: No known artifacts found in directory: {scans_dir}\n")
             return 2
     else:
-        if not args.normalized and not args.overlap and not args.triage and (not args.audit or not args.provenance):
-            sys.stderr.write("Error: Must provide either --dir, --normalized, --triage, --overlap, or both --audit and --provenance\n")
+        if (
+            not args.normalized
+            and not args.overlap
+            and not args.triage
+            and not args.pathways
+            and not args.recon
+            and not args.pin
+            and (not args.audit or not args.provenance)
+        ):
+            sys.stderr.write(
+                "Error: Must provide either --dir, --normalized, --triage, --overlap, --pathways, --recon, --pin, or both --audit and --provenance\n"
+            )
             return 2
 
         if args.audit and args.provenance:
@@ -210,6 +321,15 @@ def main() -> int:
 
         if args.normalized:
             targets_to_validate.append((Path(args.normalized).resolve(), normalized_schema_path, "normalized"))
+
+        if args.pathways:
+            targets_to_validate.append((Path(args.pathways).resolve(), pathways_schema_path, "pathways"))
+
+        if args.recon:
+            targets_to_validate.append((Path(args.recon).resolve(), recon_schema_path, "recon"))
+
+        if args.pin:
+            targets_to_validate.append((Path(args.pin).resolve(), pin_schema_path, "pin"))
 
     # Validate each target
     for artifact_path, schema_path, artifact_type in targets_to_validate:

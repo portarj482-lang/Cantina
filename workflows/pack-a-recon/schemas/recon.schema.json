@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Pack A Reconnaissance Artifact Schema",
+  "type": "object",
+  "required": ["slug", "contracts_found", "timestamp", "status"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"
+    },
+    "contracts_found": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["RECON_COMPLETE", "RECON_PARTIAL", "RECON_BLOCKED", "RECON_FAILED"]
+    },
+    "scope": {
+      "type": "object",
+      "required": ["root", "file_extension", "symlinks_followed", "inventory_complete"],
+      "properties": {
+        "root": { "type": "string" },
+        "file_extension": { "type": "string" },
+        "symlinks_followed": { "type": "boolean" },
+        "inventory_complete": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "repository_revision": { "type": ["string", "null"] },
+        "dirty_worktree": { "type": ["boolean", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "inventory": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "status"],
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": ["string", "null"] },
+          "status": { "type": "string" },
+          "reason": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

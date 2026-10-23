@@ -1,6 +1,6 @@
 # Oracle Agent Index
 
-Active Oracle System: 7 Oracles, 27 Sub-Agents  
+Active Oracle System: 7 Oracles, 30 Sub-Agents  
 Last updated: 2026-10-23
 
 ---
@@ -50,6 +50,9 @@ Last updated: 2026-10-23
 | 25 | known-overlap-annotator | `.agents/skills/known-overlap-annotator/SKILL.md` | Annotate prior audit and disclosure overlap with exact coverage limitations | Pack E / Overlap Analysis | G7 |
 | 26 | vulnerability-triage-oracle | `.agents/skills/vulnerability-triage-oracle/SKILL.md` | Evidence-driven smart contract vulnerability triage, deduplication, and triage_summary.json serialization | Pack E / Vulnerability Triage | G7 |
 | 27 | hallucination-dropper | `.agents/skills/hallucination-dropper/SKILL.md` | Audit citation integrity, drop unverified assertions, and verify AST/git references | Pack E / Citation Verification | G7 |
+| 28 | pathway-scout-oracle | `.agents/skills/pathway-scout-oracle/SKILL.md` | Evidence-driven smart-contract entrypoint discovery, trust-boundary mapping, and pathways.json serialization | Pack A / Pathway Reconnaissance | G1 |
+| 29 | recon | `.agents/skills/recon/SKILL.md` | Evidence-driven smart contract reconnaissance orchestrator, Solidity discovery, and recon.json serialization | Pack A / Reconnaissance | G1 |
+| 30 | source-pin-oracle | `.agents/skills/source-pin-oracle/SKILL.md` | Deterministic, scope-constrained source pin and security assessment orchestration, SHA-256 snapshot verification, tool governance, and pin.json serialization | Pack A / Source Pin | G1 |
 
 ---
 
@@ -71,6 +74,9 @@ G1 — Global Admin Oracle
 ├── Delegates DelayedWETH invariants → G5
 ├── Delegates Multiproof TEE invariants → G6
 ├── Delegates Findings Normalization & Registry Governance → G7
+├── Supervises → pathway-scout-oracle (#28) [Pack A Pathway Reconnaissance (PACK-A-PATHWAY-SCOUT-001)]
+├── Supervises → recon (#29) [Pack A Reconnaissance Orchestrator (META-RECON-A)]
+├── Supervises → source-pin-oracle (#30) [Pack A Source Pin (PACK-A-SOURCE-PIN-001)]
 └── Consults → purpose-agent, scope-agent, verification-agent
 
 G2 — Playbook Admin Oracle (reports to G1)

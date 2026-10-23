@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SourcePinArtifact",
+  "description": "Pack A Source Pin output artifact schema — PACK-A-SOURCE-PIN-001",
+  "type": "object",
+  "required": [
+    "slug",
+    "scope_file",
+    "scope_sha256",
+    "timestamp",
+    "status"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$",
+      "description": "Validated bounty identifier"
+    },
+    "scope_file": {
+      "type": "string",
+      "pattern": "^bounties/[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}/scope\\.md$",
+      "description": "Repository-relative scope path"
+    },
+    "scope_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Verified 64-character lowercase hexadecimal SHA-256 digest"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC timestamp in RFC 3339 / ISO 8601 format"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PIN_VERIFIED"],
+      "description": "Deterministic source pin verification status"
+    }
+  }
+}

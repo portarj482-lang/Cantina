@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PathwaysArtifact",
+  "description": "Pack A Pathway Scout output artifact schema — PACK-A-PATHWAY-SCOUT-001",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "slug",
+    "status",
+    "timestamp",
+    "repository",
+    "execution",
+    "scope",
+    "inventory",
+    "pathways",
+    "priority_review_queue",
+    "analysis",
+    "findings",
+    "completion"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Semantic version of this schema"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$",
+      "description": "Bounty slug — must match the directory under bounties/"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PATHWAYS_SCOUTED", "PARTIAL", "BLOCKED", "FAILED", "DRY_RUN"],
+      "description": "Overall reconnaissance status"
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "ISO-8601 UTC timestamp of artifact creation"
+    },
+    "repository": {
+      "type": "object",
+      "required": ["root", "commit", "worktree_clean"],
+      "additionalProperties": false,
+      "properties": {
+        "root": { "type": "string" },
+        "commit": { "type": ["string", "null"] },
+        "worktree_clean": { "type": ["boolean", "null"] }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "required": ["mode", "write_authorized"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["dry-run", "confirmed"]
+        },
+        "write_authorized": { "type": "boolean" }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "required": ["status", "in_scope_assets", "out_of_scope_assets", "assumptions", "limitations"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["defined", "partial", "missing", "conflicting"]
+        },
+        "in_scope_assets":     { "type": "array", "items": { "type": "string" } },
+        "out_of_scope_assets": { "type": "array", "items": { "type": "string" } },
+        "assumptions":         { "type": "array", "items": { "type": "string" } },
+        "limitations":         { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "inventory": {
+      "type": "object",
+      "required": ["source_roots", "contracts", "programs", "entrypoints", "external_dependencies"],
+      "properties": {
+        "source_roots":          { "type": "array", "items": { "type": "string" } },
+        "contracts":             { "type": "array" },
+        "programs":              { "type": "array" },
+        "entrypoints":           { "type": "array" },
+        "external_dependencies": { "type": "array" }
+      }
+    },
+    "pathways":              { "type": "array" },
+    "priority_review_queue": { "type": "array" },
+    "analysis": {
+      "type": "object",
+      "required": ["tools", "tests", "coverage", "limitations"],
+      "properties": {
+        "tools":    { "type": "array" },
+        "tests":    { "type": "array" },
+        "coverage": {
+          "type": "object",
+          "required": ["entrypoints_total", "entrypoints_verified", "pathways_total", "pathways_verified"],
+          "properties": {
+            "entrypoints_total":    { "type": "integer", "minimum": 0 },
+            "entrypoints_verified": { "type": "integer", "minimum": 0 },
+            "pathways_total":       { "type": "integer", "minimum": 0 },
+            "pathways_verified":    { "type": "integer", "minimum": 0 }
+          }
+        },
+        "limitations": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "findings":    { "type": "array" },
+    "completion": {
+      "type": "object",
+      "required": ["entrypoints_mapped", "pathways_mapped", "evidence_validated", "complete"],
+      "additionalProperties": false,
+      "properties": {
+        "entrypoints_mapped":  { "type": "boolean" },
+        "pathways_mapped":     { "type": "boolean" },
+        "evidence_validated":  { "type": "boolean" },
+        "complete":            { "type": "boolean" }
+      }
+    }
+  }
+}

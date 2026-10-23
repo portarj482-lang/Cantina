@@ -61,7 +61,7 @@ echo "==========================================================" | tee -a "$LOG
 run_pack_a() {
   echo -e "\n--- Executing Pack A: Source Layer ---" | tee -a "$LOG_FILE"
   "$REPO_ROOT/workflows/pack-a-source/workflow-source-pin.sh" "$FLAG" | tee -a "$LOG_FILE"
-  "$REPO_ROOT/workflows/pack-a-source/workflow-recon.sh" "$FLAG" | tee -a "$LOG_FILE"
+  "$REPO_ROOT/workflows/pack-a-recon/workflow-recon.sh" "$FLAG" | tee -a "$LOG_FILE"
   "$REPO_ROOT/workflows/pack-a-source/workflow-pathway-scout.sh" "$FLAG" | tee -a "$LOG_FILE"
 }
 

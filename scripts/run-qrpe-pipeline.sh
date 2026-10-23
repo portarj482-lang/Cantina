@@ -93,7 +93,7 @@ run_pack_e() {
   "$REPO_ROOT/workflows/pack-e-triage/workflow-normalize.sh" "$FLAG" | tee -a "$LOG_FILE"
   "$REPO_ROOT/workflows/pack-e-triage/workflow-overlap.sh" "$FLAG" | tee -a "$LOG_FILE"
   "$REPO_ROOT/workflows/pack-e-triage/workflow-triage.sh" "$FLAG" | tee -a "$LOG_FILE"
-  "$REPO_ROOT/workflows/pack-e-triage/workflow-hallucination-dropper.sh" "$FLAG" | tee -a "$LOG_FILE"
+  "$REPO_ROOT/workflows/pack-e-triage/workflow-hallucination-dropper.sh" --slug base "$FLAG" | tee -a "$LOG_FILE"
 }
 
 run_pack_f() {

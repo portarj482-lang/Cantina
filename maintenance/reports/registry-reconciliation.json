@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-10-23T08:52:02.730Z",
+  "timestamp": "2026-10-23T09:40:44.459Z",
   "totalTsAgents": 49,
-  "totalMdAgents": 51,
+  "totalMdAgents": 52,
   "governanceOracles": [
     "G1_global_admin_oracle",
     "G2_playbook_admin_oracle",
@@ -63,7 +63,8 @@
   ],
   "specializedReasoningAgents": [
     "hypothesis-analyst",
-    "independent-falsifier"
+    "independent-falsifier",
+    "fixer"
   ],
   "missingInMd": [],
   "missingInTs": [],

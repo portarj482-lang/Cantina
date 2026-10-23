@@ -1,7 +1,7 @@
 # Oracle Agent Index
 
-Active Oracle System: 6 Oracles, 23 Sub-Agents  
-Last updated: 2026-10-21
+Active Oracle System: 6 Oracles, 24 Sub-Agents  
+Last updated: 2026-10-23
 
 ---
 
@@ -45,6 +45,7 @@ Last updated: 2026-10-21
 | 21 | delay-bypass-agent | `.agents/skills/delay-bypass-agent/SKILL.md` | Falsify delay bypass (dual contract) | `DelayedWETH.sol` & `OptimismPortal2.sol` | G4 & G5 |
 | 22 | game-resolution-agent | `.agents/skills/game-resolution-agent/SKILL.md` | Dispute game status & DEFENDER_WINS | `AnchorStateRegistry.sol` / `AggregateVerifier.sol` | G4 |
 | 23 | blacklist-maturity-agent | `.agents/skills/blacklist-maturity-agent/SKILL.md` | Blacklist checks & airgap finality delay | `AnchorStateRegistry.sol` | G4 |
+| 24 | fixer | `.agents/skills/fixer/SKILL.md` | Secure DevOps Engineering & Hardening | Automation Workflows | G1 |
 
 ---
 

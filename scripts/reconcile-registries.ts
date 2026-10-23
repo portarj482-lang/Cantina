@@ -40,8 +40,8 @@ async function main() {
     }
   }
 
-  // Specialized reasoning agents from bug-hunting-system
-  const specializedReasoning = ['hypothesis-analyst', 'independent-falsifier'];
+  // Specialized reasoning agents and engineering meta-agents supervised by G1
+  const specializedReasoning = ['hypothesis-analyst', 'independent-falsifier', 'fixer'];
 
   const missingInMd: string[] = [];
   const reconciledAgents: string[] = [];

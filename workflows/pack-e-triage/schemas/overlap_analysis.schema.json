@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OverlapAnalysis",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "slug",
+    "known_issues_checked",
+    "timestamp",
+    "status",
+    "analysis",
+    "evidence",
+    "limitations",
+    "write"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$"
+    },
+    "known_issues_checked": {
+      "type": "boolean"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "OVERLAP_CHECK_COMPLETE",
+        "OVERLAP_CHECK_PARTIAL",
+        "OVERLAP_CHECK_INCOMPLETE",
+        "OVERLAP_CHECK_FAILED"
+      ]
+    },
+    "analysis": {
+      "type": "object",
+      "required": [
+        "candidate_count",
+        "known_issue_count",
+        "confirmed_overlap_count",
+        "probable_overlap_count",
+        "distinct_finding_count",
+        "indeterminate_count",
+        "relationships"
+      ],
+      "properties": {
+        "candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "known_issue_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "confirmed_overlap_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "probable_overlap_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "distinct_finding_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "indeterminate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "relationships": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "candidate_id",
+              "classification",
+              "rationale",
+              "confidence"
+            ],
+            "properties": {
+              "candidate_id": {
+                "type": "string"
+              },
+              "related_issue_id": {
+                "type": ["string", "null"]
+              },
+              "classification": {
+                "type": "string",
+                "enum": [
+                  "CONFIRMED_OVERLAP",
+                  "PROBABLE_OVERLAP",
+                  "RELATED_DISTINCT",
+                  "NO_OVERLAP_FOUND",
+                  "UNABLE_TO_DETERMINE"
+                ]
+              },
+              "rationale": {
+                "type": "string"
+              },
+              "evidence_refs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "confidence": {
+                "type": "string",
+                "enum": [
+                  "HIGH",
+                  "MEDIUM",
+                  "LOW",
+                  "UNKNOWN"
+                ]
+              },
+              "comparison_dimensions": {
+                "type": "object",
+                "properties": {
+                  "root_cause_match": {
+                    "type": ["boolean", "null"]
+                  },
+                  "affected_code_match": {
+                    "type": ["boolean", "null"]
+                  },
+                  "exploit_path_match": {
+                    "type": ["boolean", "null"]
+                  },
+                  "preconditions_match": {
+                    "type": ["boolean", "null"]
+                  },
+                  "impact_match": {
+                    "type": ["boolean", "null"]
+                  },
+                  "remediation_status": {
+                    "type": ["string", "null"]
+                  }
+                },
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "sources_inspected",
+        "sources_unavailable",
+        "tools_used",
+        "source_revision"
+      ],
+      "properties": {
+        "sources_inspected": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sources_unavailable": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tools_used": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source_revision": {
+          "type": ["string", "null"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "write": {
+      "type": "object",
+      "required": [
+        "authorized",
+        "written",
+        "validated_after_write"
+      ],
+      "properties": {
+        "authorized": {
+          "type": "boolean"
+        },
+        "written": {
+          "type": "boolean"
+        },
+        "validated_after_write": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

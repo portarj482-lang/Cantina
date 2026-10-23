@@ -1,14 +1,15 @@
 {
-  "timestamp": "2026-10-23T09:40:44.459Z",
+  "timestamp": "2026-10-23T10:35:18.148Z",
   "totalTsAgents": 49,
-  "totalMdAgents": 52,
+  "totalMdAgents": 53,
   "governanceOracles": [
     "G1_global_admin_oracle",
     "G2_playbook_admin_oracle",
     "G3_rpc_admin_oracle",
     "G4_dispute_invariant_oracle",
     "G5_delayed_weth_invariant_oracle",
-    "G6_multiproof_tee_invariant_oracle"
+    "G6_multiproof_tee_invariant_oracle",
+    "G7_findings_normalization_oracle"
   ],
   "reconciledAgents": [
     "aderyn-runner",
@@ -64,7 +65,8 @@
   "specializedReasoningAgents": [
     "hypothesis-analyst",
     "independent-falsifier",
-    "fixer"
+    "fixer",
+    "vulnerability-triage-oracle"
   ],
   "missingInMd": [],
   "missingInTs": [],

@@ -1,0 +1,313 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TriageSummary",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "slug",
+    "timestamp",
+    "status",
+    "summary",
+    "environment",
+    "candidates",
+    "errors",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "DRY_RUN",
+        "TRIAGE_INCOMPLETE",
+        "TRIAGE_COMPLETE",
+        "TRIAGE_COMPLETE_WITH_LIMITATIONS",
+        "TRIAGE_FAILED"
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "total_candidates",
+        "validated",
+        "likely_valid",
+        "needs_investigation",
+        "false_positive",
+        "duplicates",
+        "out_of_scope",
+        "informational",
+        "unverified"
+      ],
+      "properties": {
+        "total_candidates": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "validated": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "likely_valid": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "needs_investigation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "false_positive": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duplicates": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "out_of_scope": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "informational": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unverified": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "required": [
+        "repository_root",
+        "source_revision",
+        "tool_registry_baseline",
+        "tools_executed",
+        "tools_skipped",
+        "limitations"
+      ],
+      "properties": {
+        "repository_root": {
+          "type": "string"
+        },
+        "source_revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tool_registry_baseline": {
+          "type": "string"
+        },
+        "tools_executed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tools_skipped": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "disposition",
+          "severity",
+          "confidence",
+          "root_cause",
+          "affected_components",
+          "evidence",
+          "exploitability",
+          "impact",
+          "duplicate_of",
+          "scope_status",
+          "remediation",
+          "limitations"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "disposition": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED",
+              "VALIDATED",
+              "LIKELY_VALID",
+              "NEEDS_INVESTIGATION",
+              "FALSE_POSITIVE",
+              "DUPLICATE",
+              "OUT_OF_SCOPE",
+              "INFORMATIONAL"
+            ]
+          },
+          "severity": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "CRITICAL",
+              "HIGH",
+              "MEDIUM",
+              "LOW",
+              "INFORMATIONAL",
+              null
+            ]
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "MEDIUM",
+              "LOW",
+              "UNVERIFIED"
+            ]
+          },
+          "root_cause": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "affected_components": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence": {
+            "type": "array"
+          },
+          "exploitability": {
+            "type": "object",
+            "required": [
+              "prerequisites",
+              "attacker_capabilities",
+              "reproduction_status"
+            ],
+            "properties": {
+              "prerequisites": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "attacker_capabilities": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "reproduction_status": {
+                "type": "string",
+                "enum": [
+                  "NOT_ATTEMPTED",
+                  "REPRODUCED",
+                  "FAILED_REPRODUCTION",
+                  "THEORETICAL"
+                ]
+              }
+            }
+          },
+          "impact": {
+            "type": "object",
+            "required": [
+              "description",
+              "demonstrated"
+            ],
+            "properties": {
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "demonstrated": {
+                "type": "boolean"
+              }
+            }
+          },
+          "duplicate_of": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scope_status": {
+            "type": "string",
+            "enum": [
+              "IN_SCOPE",
+              "OUT_OF_SCOPE",
+              "UNVERIFIED"
+            ]
+          },
+          "remediation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "input_artifacts",
+        "output_artifact"
+      ],
+      "properties": {
+        "input_artifacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "output_artifact": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

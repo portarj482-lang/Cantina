@@ -1,6 +1,6 @@
 # Oracle Agent Index
 
-Active Oracle System: 6 Oracles, 24 Sub-Agents  
+Active Oracle System: 7 Oracles, 27 Sub-Agents  
 Last updated: 2026-10-23
 
 ---
@@ -15,6 +15,7 @@ Last updated: 2026-10-23
 | G4 | dispute-invariant-oracle | `.agents/skills/dispute-invariant-oracle/SKILL.md` | `INV-DISPUTE-01` — Fault dispute, output root proving, and withdrawal finalization | dispute-prove-agent, dispute-finalize-agent, game-resolution-agent, blacklist-maturity-agent, delay-bypass-agent |
 | G5 | delayed-weth-invariant-oracle | `.agents/skills/delayed-weth-invariant-oracle/SKILL.md` | `INV-DELAYED-WETH-02` — DelayedWETH timelock, sub-account scoping, balance solvency | weth-unlock-agent, weth-withdraw-agent, weth-solvency-agent, delay-bypass-agent |
 | G6 | multiproof-tee-invariant-oracle | `.agents/skills/multiproof-tee-invariant-oracle/SKILL.md` | `INV-MULTIPROOF-03` — AWS Nitro attestation, P-384 verification hints, enclave signer lifecycle | tee-register-agent, tee-validity-agent, attestation-timestamp-agent, inverse-hint-integrity-agent, signer-lifecycle-agent |
+| G7 | findings-normalization-oracle | `.agents/skills/findings-normalization-oracle/SKILL.md` | Pack E — Findings Normalization (`findings_normalized.json`), Overlap Annotation (`overlap_analysis.json`), Vulnerability Triage (`triage_summary.json`), and Tool Registry Capability Governance | normalize-file, normalize-line, normalize-rule, sarif-collector, hallucination-dropper, known-overlap-annotator, vulnerability-triage-oracle |
 
 ---
 
@@ -46,6 +47,9 @@ Last updated: 2026-10-23
 | 22 | game-resolution-agent | `.agents/skills/game-resolution-agent/SKILL.md` | Dispute game status & DEFENDER_WINS | `AnchorStateRegistry.sol` / `AggregateVerifier.sol` | G4 |
 | 23 | blacklist-maturity-agent | `.agents/skills/blacklist-maturity-agent/SKILL.md` | Blacklist checks & airgap finality delay | `AnchorStateRegistry.sol` | G4 |
 | 24 | fixer | `.agents/skills/fixer/SKILL.md` | Secure DevOps Engineering & Hardening | Automation Workflows | G1 |
+| 25 | known-overlap-annotator | `.agents/skills/known-overlap-annotator/SKILL.md` | Annotate prior audit and disclosure overlap with exact coverage limitations | Pack E / Overlap Analysis | G7 |
+| 26 | vulnerability-triage-oracle | `.agents/skills/vulnerability-triage-oracle/SKILL.md` | Evidence-driven smart contract vulnerability triage, deduplication, and triage_summary.json serialization | Pack E / Vulnerability Triage | G7 |
+| 27 | hallucination-dropper | `.agents/skills/hallucination-dropper/SKILL.md` | Audit citation integrity, drop unverified assertions, and verify AST/git references | Pack E / Citation Verification | G7 |
 
 ---
 
@@ -66,6 +70,7 @@ G1 — Global Admin Oracle
 ├── Delegates Fault Dispute invariants → G4
 ├── Delegates DelayedWETH invariants → G5
 ├── Delegates Multiproof TEE invariants → G6
+├── Delegates Findings Normalization & Registry Governance → G7
 └── Consults → purpose-agent, scope-agent, verification-agent
 
 G2 — Playbook Admin Oracle (reports to G1)
@@ -97,13 +102,20 @@ G6 — Multiproof TEE Invariant Oracle (reports to G1)
 ├── Supervises → attestation-timestamp-agent (#17) [Inherits TEEProverRegistry]
 ├── Supervises → inverse-hint-integrity-agent (#18) [Inherits hints.rs & NitroValidator]
 └── Supervises → signer-lifecycle-agent (#19) [Inherits TEEProverRegistry]
+
+G7 — Findings Normalization Oracle (reports to G1)
+├── Supervises → normalize-file, normalize-line, normalize-rule
+├── Supervises → sarif-collector
+├── Supervises → known-overlap-annotator (#25) [Inherits Pack E Overlap Analysis]
+├── Supervises → vulnerability-triage-oracle (#26) [Inherits Pack E Vulnerability Triage (CANTINA-SEC-TRIAGE-001)]
+└── Supervises → hallucination-dropper (#27) [Inherits Pack E Citation Verification]
 ```
 
 ---
 
 ## Activation Rules
 
-- Load an oracle SKILL.md when its domain (global/, playbooks/, ubuntu-rpc, fault dispute, delayed WETH, multiproof TEE) is being modified or audited.
+- Load an oracle SKILL.md when its domain (global/, playbooks/, ubuntu-rpc, fault dispute, delayed WETH, multiproof TEE, findings normalization) is being modified or audited.
 - Load a sub-agent SKILL.md when its specific contract function or invariant test is being executed.
 - `verification-agent` is loaded before any finding submission.
 - `cleanup-agent` is loaded at every session end without exception.

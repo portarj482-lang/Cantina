@@ -172,3 +172,97 @@ python3 workflows/pack-e-triage/validate_schemas.py --dir bounties/<SLUG>/scans
 - [x] **Sentinel Integrity**: `ALL_CITATIONS_VERIFIED` is output to `stdout` strictly upon non-empty, 100% verification and confirmed writes. Zero-citation runs do not emit the sentinel.
 - [x] **Schema Validation**: Both `hallucination_audit.json` and `hallucination_audit.provenance.json` conform to Draft 2020-12 JSON schemas.
 - [x] **Monorepo Hygiene**: `make audit` passes with zero tracked transient files.
+
+---
+
+# Pack E Triage: Overlap & Known-Issue Annotation Workflow
+
+## Purpose and Scope
+
+`workflow-overlap.sh` executes the Overlap & Known-Issue Annotation workflow for a specified bounty workspace. Driven by Meta-Persona **CANTINA-PACK-E** (Oracle Agent: `known-overlap-annotator`), it transforms raw scanner outputs and candidate findings into an evidence-backed, multidimensionally correlated overlap analysis artifact:
+
+`bounties/<SLUG>/scans/overlap_analysis.json`
+
+The persona performs genuine multidimensional correlation against known issues, accepted risks, and historical disclosures rather than manufacturing static assertions.
+
+---
+
+## CLI Syntax and Examples
+
+### Synopsis
+
+```bash
+./workflow-overlap.sh [--slug SLUG] [--dry-run] [--confirm] [-h|--help]
+```
+
+### Options
+
+| Flag | Description | Default |
+|---|---|---|
+| `--slug SLUG` | Target bounty slug (must match `^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$`) | `base` |
+| `--dry-run` | Preview overlap analysis without writing files | `false` |
+| `--confirm` | Authorize durable write and atomic replacement of `overlap_analysis.json` | `false` |
+| `-h`, `--help` | Show usage documentation | None |
+
+### Examples
+
+#### 1. Preview Mode (Default)
+Inspects candidates and known issues without modifying disk. Returns exit code `0`:
+```bash
+./workflows/pack-e-triage/workflow-overlap.sh --slug base --dry-run
+```
+
+#### 2. Confirmed Execution
+Performs multidimensional comparison and writes `overlap_analysis.json` atomically with `0600` permissions:
+```bash
+./workflows/pack-e-triage/workflow-overlap.sh --slug base --confirm
+```
+
+---
+
+## Exit Codes
+
+| Code | Meaning | Operational Action |
+|---|---|---|
+| `0` | Analysis succeeded, or valid preview completed without errors | Overlap report created and validated, or dry-run preview emitted. |
+| `1` | Analysis failure or fatal calculation error | Review stderr JSON Lines logs and input report formats. |
+| `2` | Write / filesystem failure (symlink detected, unsafe path, cross-device error) | Ensure target directory is safe, non-symlinked, and writable. |
+| `3` | Required dependency missing | Ensure `bash`, `git`, and `python3` are in `PATH`. |
+| `4` | Invalid CLI arguments, missing values, traversal, or invalid slug | Check CLI flags against regex contract `^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$`. |
+
+---
+
+## 7-Dimension Multidimensional Comparison
+
+Candidates and known issues are compared along 7 discrete dimensions:
+1. **Root-Cause Equivalence**: Semantic keyword overlap and underlying flaw similarity.
+2. **Affected Code & Component Overlap**: Exact or base contract/module matching.
+3. **Exploit-Path Equivalence**: Precondition and call graph correlation.
+4. **Preconditions & Attacker Capabilities**: Role requirements and privilege assumptions.
+5. **Impact Equivalence**: Financial, invariant, or availability outcome.
+6. **Existing Issue Identifiers**: Historical tag, CVE, or previous audit ID match.
+7. **Source-Version Differences & Remediation**: Pinned revision and patch status.
+
+### Classification Taxonomy
+- `CONFIRMED_OVERLAP`: Material equivalence established with high confidence.
+- `PROBABLE_OVERLAP`: Component and root cause match; edge preconditions unverified.
+- `RELATED_DISTINCT`: Same component or category, but distinct root cause / exploit path.
+- `NO_OVERLAP_FOUND`: Scoped search result finding no duplicate within inspected corpus.
+- `UNABLE_TO_DETERMINE`: Insufficient or contradictory evidence.
+
+---
+
+## Report Contract & Schema Validation
+
+The artifact conforms to `schemas/overlap_analysis.schema.json`.
+
+Validate any generated artifact using:
+```bash
+python3 workflows/pack-e-triage/validate_schemas.py --overlap bounties/<SLUG>/scans/overlap_analysis.json
+```
+
+Or run the full behavioral test suite:
+```bash
+./workflows/pack-e-triage/tests/test_workflow_overlap.sh
+```
+

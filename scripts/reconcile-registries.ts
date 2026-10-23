@@ -41,7 +41,7 @@ async function main() {
   }
 
   // Specialized reasoning agents and engineering meta-agents supervised by G1
-  const specializedReasoning = ['hypothesis-analyst', 'independent-falsifier', 'fixer'];
+  const specializedReasoning = ['hypothesis-analyst', 'independent-falsifier', 'fixer', 'vulnerability-triage-oracle'];
 
   const missingInMd: string[] = [];
   const reconciledAgents: string[] = [];

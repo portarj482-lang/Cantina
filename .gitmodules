@@ -67,3 +67,6 @@
 [submodule "op-rbuilder"]
 	path = op-rbuilder
 	url = https://github.com/base/op-rbuilder.git
+[submodule "forge-std"]
+	path = bounties/Revert v4lend Competition/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std

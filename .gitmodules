@@ -37,3 +37,6 @@
 [submodule "bounties_base_foundry"]
 	path = bounties/base/foundry
 	url = https://github.com/base/foundry.git
+[submodule "base-std"]
+	path = bounties/base/base-std
+	url = https://github.com/base/base-std.git

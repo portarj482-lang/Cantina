@@ -1,0 +1,39 @@
+{
+  "name": "governed-universal-model-core",
+  "version": "0.5.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "demo": "node --experimental-strip-types src/demo.ts",
+    "demo:cpi": "node --experimental-strip-types src/cpi/demo.ts",
+    "test:temporal": "node --experimental-strip-types --test test/temporal*.test.ts",
+    "test:cci": "node --experimental-strip-types --test test/cci.test.ts",
+    "demo:temporal": "node --experimental-strip-types src/temporal/demo.ts",
+    "test:unit": "node --experimental-strip-types --test test/*.test.ts",
+    "test:all": "npm run typecheck && npm run test:unit",
+    "demo:all": "npm run demo && npm run demo:cpi && npm run demo:temporal && npm run demo:operations",
+    "demo:operations": "node --experimental-strip-types src/operations/demo.ts",
+    "test:operations": "node --experimental-strip-types --test test/operations.test.ts",
+    "test:rights": "node --experimental-strip-types --test test/rights.test.ts",
+    "test:boundary": "node --experimental-strip-types --test test/boundary/*.test.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.9.0"
+  },
+  "engines": {
+    "node": ">=22.16.0",
+    "npm": ">=10"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./operations": "./src/operations/index.ts",
+    "./rights": "./src/rights/index.ts",
+    "./cpi": "./src/cpi/index.ts",
+    "./cci": "./src/cci/index.ts",
+    "./temporal": "./src/temporal/index.ts",
+    "./boundary": "./src/boundary/index.ts"
+  }
+}

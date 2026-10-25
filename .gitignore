@@ -68,3 +68,7 @@ perception_mesh_log.jsonl
 maintenance/backups/
 
 
+
+# Separate local nvm checkout; not part of GUMC source.
+.gemini/governed-universal-model-core/nvm/
+.gemini/governed-universal-model-core/nvm/

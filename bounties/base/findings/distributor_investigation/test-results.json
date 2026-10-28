@@ -1,0 +1,58 @@
+{
+  "suite": "bounties/base/eip-7702-proxy/test/EchoDistributorReplayPoC.t.sol",
+  "contract": "EchoDistributorReplayPoCTest",
+  "compiler": "solc 0.8.23",
+  "runner": "forge test",
+  "timestamp": "2026-10-28T02:53:00Z",
+  "tests": [
+    {
+      "name": "test_PropertyA_SignatureUniqueness_Falsified",
+      "status": "PASS",
+      "gasUsed": 408817,
+      "assertion": "Second claim with identical voucher succeeds"
+    },
+    {
+      "name": "test_PropertyB_AllocationCapEnforced_SignatureCapViolated",
+      "status": "PASS",
+      "gasUsed": 491436,
+      "assertion": "Cumulative claims exceed single voucher amount (800 claimed vs 400 voucher)"
+    },
+    {
+      "name": "test_PropertyC_CarryAccounting_HonestBaseline",
+      "status": "PASS",
+      "gasUsed": 504279,
+      "assertion": "Honest claim at $10 price generates 68 tokens carry"
+    },
+    {
+      "name": "test_PropertyC_CarryAccounting_ReplayEvasionExploit",
+      "status": "PASS",
+      "gasUsed": 409707,
+      "assertion": "Replayed claim at $1 price generates 0 tokens carry (68 tokens stolen)"
+    },
+    {
+      "name": "test_PropertyD_AuthorizationBinding_Enforced",
+      "status": "PASS",
+      "gasUsed": 260405,
+      "assertion": "Forged or altered receiver reverts UnauthorizedUserSigner"
+    },
+    {
+      "name": "test_PropertyE_StateTransitionConsistency",
+      "status": "PASS",
+      "gasUsed": 407097,
+      "assertion": "Attempt to claim beyond SPV distribution shares reverts AmountExceedsClaimable"
+    },
+    {
+      "name": "test_withdrawCarry_SignatureReplayExploit",
+      "status": "PASS",
+      "gasUsed": 844714,
+      "assertion": "3x replay drains 150 tokens from carry pool"
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0,
+    "duration": "2.34s"
+  }
+}

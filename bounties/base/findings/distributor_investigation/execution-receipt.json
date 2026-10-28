@@ -1,0 +1,30 @@
+{
+  "execution_id": "EXEC-FOUNDRY-ECHO-20261028-001",
+  "investigation_id": "F-003",
+  "runner_identity": "Foundry Isolated Test Runner (forge 1.8.5)",
+  "suite_id": "ECHO-DISTRIBUTOR-FULL-VERIFICATION-V1",
+  "started_at": "2026-10-28T06:51:30Z",
+  "completed_at": "2026-10-28T06:51:35Z",
+  "duration_seconds": 4.41,
+  "suites_executed": [
+    {
+      "suite": "EchoDistributorReplayPoC.t.sol",
+      "exit_code": 0,
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "suite": "EchoDistributorRegression.t.sol",
+      "exit_code": 0,
+      "passed": 3,
+      "failed": 0
+    }
+  ],
+  "total_tests": 10,
+  "total_passed": 10,
+  "total_failed": 0,
+  "raw_log_path": "bounties/base/findings/distributor_investigation/raw-test-output.log",
+  "raw_log_sha256": "6a8814083549d54113a2ec14633d18d775d56cc30b90a107cf2dc9ba033c7470",
+  "execution_status": "COMPLETED",
+  "authentication_status": "AUTHENTICATED"
+}

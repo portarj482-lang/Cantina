@@ -1,0 +1,64 @@
+{
+  "currency": "USDC",
+  "testHarnessParameters": {
+    "investedUSDC": 1000,
+    "totalCarryBPS": 2000,
+    "tranche1TokenPrice": 1.0,
+    "tranche2TokenPrice": 10.0,
+    "tranche1Amount": 400,
+    "tranche2Amount": 400
+  },
+  "honestClaimAccounting": {
+    "tranche1": {
+      "claimedUSDC": 400,
+      "hurdleRemaining": 600,
+      "carryUSDC": 0,
+      "carryTokens": 0
+    },
+    "tranche2": {
+      "claimedUSDC": 4000,
+      "hurdleRemaining": 600,
+      "amountSubjectToCarry": 3400,
+      "carryUSDC": 680,
+      "carryTokens": 68,
+      "tokensToClaimer": 332,
+      "tokensToDealLead": 68
+    }
+  },
+  "replayExploitAccounting": {
+    "tranche1": {
+      "claimedUSDC": 400,
+      "hurdleRemaining": 600,
+      "carryUSDC": 0,
+      "carryTokens": 0
+    },
+    "tranche2_replayed": {
+      "claimedUSDC": 400,
+      "hurdleRemaining": 600,
+      "amountSubjectToCarry": 0,
+      "carryUSDC": 0,
+      "carryTokens": 0,
+      "tokensToClaimer": 400,
+      "tokensToDealLead": 0
+    }
+  },
+  "economicDivergence": {
+    "stolenCarryTokens": 68,
+    "stolenCarryUSD": 680,
+    "evasionRate": "100%",
+    "accountingDistortion": "amountClaimedUSDC under-records distributed value by 3600 USDC"
+  },
+  "productionScalingExample": {
+    "spvSizeUSD": 1000000,
+    "seedTokens": 10000000,
+    "seedPriceUSD": 0.1,
+    "listingPriceUSD": 1.0,
+    "carryBPS": 2000,
+    "singleClaimantHurdleEvasion": {
+      "tokensClaimed": 50000,
+      "carryTokensStolen": 9000,
+      "carryUSDStolen": 9000
+    },
+    "theoreticalMaxSPVEvasion": 200000
+  }
+}

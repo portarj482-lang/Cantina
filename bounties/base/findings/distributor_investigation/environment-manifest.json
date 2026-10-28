@@ -1,0 +1,39 @@
+{
+  "host": {
+    "os": "Linux x86_64",
+    "kernel": "6.6.87.2-microsoft-standard-WSL2",
+    "architecture": "x86_64"
+  },
+  "toolchain": {
+    "foundry": {
+      "version": "1.8.5",
+      "commit": "51a52c59cffd940f76eddd0b4bb1791aa4b5ac7f",
+      "buildDate": "2026-10-05T17:18:54.332175693Z",
+      "binary": "/home/nova/.foundry/bin/forge"
+    },
+    "solidity": {
+      "compiler": "solc 0.8.23",
+      "evmVersion": "shanghai",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "viaIR": true
+    },
+    "node": {
+      "version": "v18.19.1"
+    }
+  },
+  "repository": {
+    "remoteUrl": "https://github.com/portarj482-lang/Cantina.git",
+    "pinnedCommit": "bf53b4f70ee62bbc369607efd4bc90a6a650e5a8",
+    "workspaceRoot": "/home/nova/projects/cantina"
+  },
+  "targetChain": {
+    "network": "Base Mainnet",
+    "chainId": 8453,
+    "executionMode": "Isolated Foundry Local Execution (Fork-Safe)"
+  },
+  "capturedAt": "2026-10-28T06:51:00Z",
+  "author": "MQ-RAE-001"
+}

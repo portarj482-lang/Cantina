@@ -1,0 +1,7 @@
+Hypothesis_ID,Description,Affected_Path,Expected_Behavior,Observed_Behavior,Falsification_Result,Status
+H1,Claim replay via unexpired EIP-712 signature,Distributor._release,Voucher single-use,Voucher replayed successfully,Falsified invariant INV-SIG-01,CONFIRMED
+H2,Carry evasion via stale valuation voucher replay,Distributor._calculateCarryAmount,Carry computed on current market price,Carry calculated on stale price reducing carry to zero,Falsified invariant INV-CARRY-01,CONFIRMED
+H3,Carry-withdrawal replay drains carry pool,Distributor.withdrawCarry,Cumulative withdrawal <= authorized voucher amount,Replayed 3x draining 150 tokens from pool,Falsified invariant INV-WITHDRAW-01,CONFIRMED
+H4,Accounting inconsistency violates share cap,Distributor._claimable,Claims strictly capped by shares,Share cap strictly enforced (reverts AmountExceedsClaimable),Invariant INV-ALLOC-01 holds,REFUTED_BOUNDED
+H5,Remediation compatibility without storage collision,Distributor.sol:172,Safe slot append,Slot 13 append verified with zero shifts,Slot collision disproved,CONFIRMED
+H6,Program eligibility and duplicate uniqueness,bounties/base/scope.md,In scope and not duplicate,Tier 1 scope confirmed; zero overlap with #1736,Ineligibility disproved,CONFIRMED

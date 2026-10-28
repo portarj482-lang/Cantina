@@ -1,0 +1,33 @@
+{
+  "contract": "Distributor.sol",
+  "invariants": [
+    {
+      "id": "INV-SIG-01",
+      "name": "EIP-712 Signature Single-Use Uniqueness",
+      "formalStatement": "forall digest in ConsumedDigests: verifyAndRelease(digest) reverts SignatureAlreadyConsumed",
+      "observedBehavior": "FAILED_IN_CURRENT_BYTECODE",
+      "violationMechanism": "Neither ClaimData nor Distributor tracks consumed digests or sequential nonces."
+    },
+    {
+      "id": "INV-CARRY-01",
+      "name": "Performance Fee Hurdle Consistency",
+      "formalStatement": "CarryTokenAmount == PriceLib.convertUSDCToToken(calculateCarryAmountUSDC(investedUSDC, claimedUSDC, currentValuationUSDC, carryBPS))",
+      "observedBehavior": "FAILED_IN_CURRENT_BYTECODE",
+      "violationMechanism": "Replaying earlier voucher forces valuation at historical low price, resulting in zero carry fee calculation."
+    },
+    {
+      "id": "INV-WITHDRAW-01",
+      "name": "Carry Withdrawal Authorization Monotonicity",
+      "formalStatement": "CumulativeWithdrawnByReceiver <= AuthorizedSignedAmount",
+      "observedBehavior": "FAILED_IN_CURRENT_BYTECODE",
+      "violationMechanism": "Public withdrawCarry allows repeated replay of a single voucher up to contract balance or carry pool limit."
+    },
+    {
+      "id": "INV-ALLOC-01",
+      "name": "Principal Share Allocation Bound",
+      "formalStatement": "CumulativeClaimedTokens <= user.distributionShares",
+      "observedBehavior": "PRESERVED",
+      "violationMechanism": "Guarded by _claimable() check in line 325."
+    }
+  ]
+}

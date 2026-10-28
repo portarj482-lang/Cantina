@@ -1,0 +1,33 @@
+{
+  "network": "Base Mainnet",
+  "chainId": 8453,
+  "deployments": [
+    {
+      "role": "primary_implementation",
+      "address": "0x1798D23f29968b4fff7A60A90645B0939d04f47E",
+      "bytecodeKeccak": "0x46283d0f37828a42b00fbd0ce6f0ecca94ca8ba05f4c34f95a8c00d50ca7da0f",
+      "pattern": "Implementation",
+      "basescanUrl": "https://basescan.org/address/0x1798D23f29968b4fff7A60A90645B0939d04f47E#code"
+    },
+    {
+      "role": "secondary_implementation",
+      "address": "0x1B4fA4F9BDd13Bfdec49DA85750Ab38387EE4DCF",
+      "bytecodeKeccak": "0xde886f21de4e4d461f6c20d4d84efde81eff08e385044cbb5fcf7c79d5096460",
+      "pattern": "Implementation",
+      "basescanUrl": "https://basescan.org/address/0x1B4fA4F9BDd13Bfdec49DA85750Ab38387EE4DCF#code"
+    },
+    {
+      "role": "proxy_factory",
+      "address": "0x3002aadad07ab12e5bb8098de3542bee2ad44fed",
+      "pattern": "TransparentUpgradeableProxyFactory",
+      "basescanUrl": "https://basescan.org/address/0x3002aadad07ab12e5bb8098de3542bee2ad44fed#code"
+    },
+    {
+      "role": "generic_registry",
+      "address": "0x73612914c81a9c072333ea9ea71a9b26a5b9a707",
+      "pattern": "GenericRegistry",
+      "basescanUrl": "https://basescan.org/address/0x73612914c81a9c072333ea9ea71a9b26a5b9a707#code"
+    }
+  ],
+  "verificationStatus": "VERIFIED_ON_CHAIN"
+}

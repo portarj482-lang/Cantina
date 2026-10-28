@@ -1,0 +1,31 @@
+{
+  "traces": [
+    {
+      "test": "test_PropertyA_SignatureUniqueness_Falsified",
+      "steps": [
+        {"action": "claimTokens(voucher)", "result": "Transfer 400 tokens to claimant", "amountClaimed": 400},
+        {"action": "claimTokens(voucher)", "result": "Transfer 400 tokens to claimant", "amountClaimed": 800}
+      ],
+      "violation": "Identical digest 0x3a4b... processed twice without revert"
+    },
+    {
+      "test": "test_PropertyC_CarryAccounting_ReplayEvasionExploit",
+      "steps": [
+        {"action": "claimTokens(voucher_tranche1)", "tokenPrice": 1.0, "amount": 400, "carryDeducted": 0},
+        {"action": "marketPriceSurge", "marketPrice": 10.0},
+        {"action": "claimTokens(voucher_tranche1_replayed)", "tokenPrice": 1.0, "amount": 400, "carryDeducted": 0, "actualMarketValue": 4000}
+      ],
+      "deltaLossTokens": 68,
+      "deltaLossUSDC": 680
+    },
+    {
+      "test": "test_withdrawCarry_SignatureReplayExploit",
+      "steps": [
+        {"action": "withdrawCarry(voucher_50)", "withdrawn": 50, "poolRemaining": 150},
+        {"action": "withdrawCarry(voucher_50)", "withdrawn": 50, "poolRemaining": 100},
+        {"action": "withdrawCarry(voucher_50)", "withdrawn": 50, "poolRemaining": 50}
+      ],
+      "unauthorizedExtraction": 100
+    }
+  ]
+}

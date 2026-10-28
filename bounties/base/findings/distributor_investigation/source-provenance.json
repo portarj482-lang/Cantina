@@ -1,0 +1,23 @@
+{
+  "repository": "https://github.com/portarj482-lang/Cantina.git",
+  "commit": "bf53b4f70ee62bbc369607efd4bc90a6a650e5a8",
+  "pinnedSources": [
+    {
+      "sourcePath": "bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol",
+      "sha256": "1b43b7bd18de6b9a6c9fa8e7a11659967e10a214c600bfc78c3ffc69e9f68b6f",
+      "solcVersion": "0.8.23",
+      "optimizerRuns": 200,
+      "viaIR": true
+    },
+    {
+      "sourcePath": "bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Types.sol",
+      "sha256": "8f6f8607ab65090d10dac3db544a24abe4688b073c29329a27d5810a3b1ee42a"
+    },
+    {
+      "sourcePath": "bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/UnlockerLib.sol",
+      "sha256": "000c48b59b06d7c534ba3b1bf18c18dc4934259a6e3790a35f3698b2a1fa0738"
+    }
+  ],
+  "verificationTimestamp": "2026-10-28T04:06:00Z",
+  "verifiedBy": "MQ-CANTINA-DISTRIBUTOR-001 (SOURCE-PIN)"
+}

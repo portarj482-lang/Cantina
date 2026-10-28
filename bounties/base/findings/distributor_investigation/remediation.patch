@@ -1,0 +1,39 @@
+--- a/src/unlock/v1/Distributor.sol
++++ b/src/unlock/v1/Distributor.sol
+@@ -69,6 +69,9 @@ contract Distributor is Initializable, AccessControlEnumerableUpgradeable, EIP7
+     bytes16 internal constant PLATFORM_ENTITY_UUID = bytes16(0);
+ 
++    /// @notice Custom error thrown when a signed voucher digest is resubmitted.
++    error SignatureAlreadyConsumed(bytes32 digest);
++
+     /// @notice Emitted when tokens are claimed.
+@@ -169,6 +172,9 @@ contract Distributor is Initializable, AccessControlEnumerableUpgradeable, EIP7
+     bytes16[] private _carryWithdrawerUUIDs;
+ 
++    /// @notice Tracks consumed EIP-712 voucher digests to prevent signature replay.
++    mapping(bytes32 => bool) private _consumedDigests;
++
+     struct Init {
+         IERC20 token;
+@@ -306,6 +312,10 @@ contract Distributor is Initializable, AccessControlEnumerableUpgradeable, EIP7
+             bytes32 digest = ClaimDataLib.digestTypedData(claimData, _domainSeparatorV4());
+ 
++            if (_consumedDigests[digest]) {
++                revert SignatureAlreadyConsumed(digest);
++            }
++            _consumedDigests[digest] = true;
++
+             if (
+                 !isForcedDistributionModeEnabled
+                     && !SignatureChecker.isValidSignatureNow(user.signer, digest, claimSignatureUser)
+@@ -413,6 +423,10 @@ contract Distributor is Initializable, AccessControlEnumerableUpgradeable, EIP7
+             bytes32 digest = CarryWithdrawalLib.digestTypedData(data, _domainSeparatorV4());
+ 
++            if (_consumedDigests[digest]) {
++                revert SignatureAlreadyConsumed(digest);
++            }
++            _consumedDigests[digest] = true;
++
+             if (
+                 !isForcedDistributionModeEnabled
+                     && !SignatureChecker.isValidSignatureNow(user.signer, digest, userSignature)

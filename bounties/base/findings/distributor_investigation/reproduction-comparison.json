@@ -1,0 +1,11 @@
+{
+  "baseline_execution_id": "EXEC-FOUNDRY-ECHO-20261028-001",
+  "reproduction_id": "REPRO-RUN-01-20261028",
+  "test_count_parity": true,
+  "exit_code_parity": true,
+  "assertion_parity": true,
+  "gas_variance_observed": "None (< 0.01%)",
+  "nondeterminism_detected": false,
+  "material_outcome": "IDENTICAL_CONFIRMED",
+  "reproduction_status": "REPRODUCED"
+}

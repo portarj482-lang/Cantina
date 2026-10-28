@@ -1,0 +1,77 @@
+{
+  "investigationId": "F-003",
+  "claims": [
+    {
+      "claim_id": "F003-H1",
+      "security_property": "EIP-712 Claim Signature Single-Use Uniqueness",
+      "preconditions": "Claimant holds unlocked tokens; unexpired ClaimData voucher signed by claimant and platform",
+      "test_case_ids": ["test_PropertyA_SignatureUniqueness_Falsified", "test_PropertyB_AllocationCapEnforced_SignatureCapViolated"],
+      "evidence_refs": ["test-results.json", "raw-test-output.log", "Distributor.sol#L305-L318"],
+      "expected_result": "Second submission of identical ClaimData reverts SignatureAlreadyConsumed",
+      "observed_result": "Both submissions execute successfully without revert; digest is not tracked",
+      "interpretation": "Replay condition is real and deterministic; contract lacks digest nullification",
+      "limitations": "Replay window is bounded by block.timestamp < expiresAt",
+      "review_status": "SUPPORTED"
+    },
+    {
+      "claim_id": "F003-H2",
+      "security_property": "Performance Fee (Carry) Hurdle Monotonicity",
+      "preconditions": "Investor in SPV across tranches where market price increases; unexpired earlier low-price voucher",
+      "test_case_ids": ["test_PropertyC_CarryAccounting_HonestBaseline", "test_PropertyC_CarryAccounting_ReplayEvasionExploit"],
+      "evidence_refs": ["impact-calculations.json", "04-impact-and-severity-analysis.md", "Distributor.sol#L349-L382"],
+      "expected_result": "Carry fee is deducted based on current fair market token price (68 tokens at $10)",
+      "observed_result": "Carry fee evaluated at historical $1 price, computing 0 carry fee (68 tokens stolen)",
+      "interpretation": "100% carry evasion achieved via stale valuation replay, causing direct loss to deal leads",
+      "limitations": "Requires price appreciation prior to voucher expiration",
+      "review_status": "SUPPORTED"
+    },
+    {
+      "claim_id": "F003-H3",
+      "security_property": "Carry Withdrawal Authorization Monotonicity",
+      "preconditions": "Deal lead signs partial carry withdrawal; accrued carry exceeds voucher amount",
+      "test_case_ids": ["test_withdrawCarry_SignatureReplayExploit"],
+      "evidence_refs": ["test-results.json", "raw-test-output.log", "Distributor.sol#L393-L441"],
+      "expected_result": "Cumulative withdrawals cannot exceed single signed voucher authorization",
+      "observed_result": "Voucher replayed 3x, draining 150 tokens from pool instead of 50 tokens authorized",
+      "interpretation": "Permissionless function allows unauthorized involuntary liquidation of carry pool",
+      "limitations": "Drained tokens are transferred to deal lead receiver address, causing tax/cash-flow griefing rather than direct third-party theft",
+      "review_status": "SUPPORTED"
+    },
+    {
+      "claim_id": "F003-H4",
+      "security_property": "Principal Share Allocation Bound",
+      "preconditions": "Claimant attempts to claim beyond total SPV distribution shares",
+      "test_case_ids": ["test_PropertyE_StateTransitionConsistency"],
+      "evidence_refs": ["test-results.json", "Distributor.sol#L325-L328"],
+      "expected_result": "Claims exceeding distribution shares revert AmountExceedsClaimable",
+      "observed_result": "Reverts AmountExceedsClaimable as expected; investor principal cannot be stolen",
+      "interpretation": "Exploit cannot drain innocent investors' principal; theft is strictly bounded to performance fees",
+      "limitations": "None; formal bound is enforced",
+      "review_status": "SUPPORTED"
+    },
+    {
+      "claim_id": "F003-H5",
+      "security_property": "Remediation and Storage Compatibility",
+      "preconditions": "Appending _consumedDigests mapping to existing TransparentUpgradeableProxy storage",
+      "test_case_ids": ["test_Regression_PatchedGate_AllowsFreshVoucher", "test_Regression_PatchedGate_BlocksCarryWithdrawalReplay", "test_Regression_PatchedGate_BlocksClaimReplay"],
+      "evidence_refs": ["storage-layout-after.json", "remediation.patch", "EchoDistributorRegression.t.sol"],
+      "expected_result": "Replays blocked, fresh vouchers permitted, zero storage shifts in slots 0-12",
+      "observed_result": "3/3 regression tests pass; mapping occupies free Slot 13 with zero collision",
+      "interpretation": "Fix is safe, effective, and backwards-compatible with deployed proxies",
+      "limitations": "Requires standard upgradeToAndCall by proxy admin",
+      "review_status": "SUPPORTED"
+    },
+    {
+      "claim_id": "F003-H6",
+      "security_property": "Scope and Novelty Eligibility",
+      "preconditions": "Evaluation against Cantina Base bounty scope and prior disclosures",
+      "test_case_ids": [],
+      "evidence_refs": ["scope-evidence.json", "06-independent-review-and-overlap.md", "counter-hypotheses.json"],
+      "expected_result": "Target is Tier 1 in-scope product and distinct from Finding #1736",
+      "observed_result": "Confirmed in scope.md#L176; zero overlap with #1736 (Echo Distributor vs EIP-7702 proxy)",
+      "interpretation": "Finding is eligible and novel",
+      "limitations": "Payout subject to Cantina triage adjudication",
+      "review_status": "SUPPORTED"
+    }
+  ]
+}

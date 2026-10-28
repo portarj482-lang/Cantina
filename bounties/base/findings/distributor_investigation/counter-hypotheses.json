@@ -1,0 +1,41 @@
+{
+  "adversarialChallenger": "Lead Verification Architect & Adversarial Challenger (QRPE / G7 Mesh)",
+  "date": "2026-10-28",
+  "counterHypotheses": [
+    {
+      "id": "CH-01",
+      "statement": "Off-chain voucher expiration (expiresAt) prevents practical replay.",
+      "falsificationMethod": "Analysis of production expiration windows and execution of test_PropertyA with unexpired timestamp.",
+      "result": "DISPROVED",
+      "finding": "Vouchers require operational validity buffers (hours to days); intra-window replay is unconstrained."
+    },
+    {
+      "id": "CH-02",
+      "statement": "Distribution share caps (_claimable) neutralize the economic impact of replay.",
+      "falsificationMethod": "Comparison of honest vs replay carry fee deduction in test_PropertyC.",
+      "result": "DISPROVED",
+      "finding": "Share caps bound total token claims, but do not prevent 100% carry fee evasion."
+    },
+    {
+      "id": "CH-03",
+      "statement": "Carry fee evasion is temporary and self-corrects in future tranches.",
+      "falsificationMethod": "Analysis of amountClaimedUSDC state variable accumulation and hurdle arithmetic.",
+      "result": "DISPROVED",
+      "finding": "Under-recording of amountClaimedUSDC distorts hurdle permanently in claimant's favor."
+    },
+    {
+      "id": "CH-04",
+      "statement": "withdrawCarry replay is restricted to authorized deal leads.",
+      "falsificationMethod": "Source audit of Distributor.sol:390 and execution of test_withdrawCarry_SignatureReplayExploit.",
+      "result": "DISPROVED",
+      "finding": "withdrawCarry is permissionless; anyone can replay broadcast calldata."
+    },
+    {
+      "id": "CH-05",
+      "statement": "The vulnerability is a duplicate of Cantina Finding #1736.",
+      "falsificationMethod": "Comparative analysis of contract addresses, bytecode, and root causes.",
+      "result": "DISPROVED",
+      "finding": "#1736 was in EIP-7702 proxy delegation; F-003 is in Echo Distributor. Zero overlap."
+    }
+  ]
+}

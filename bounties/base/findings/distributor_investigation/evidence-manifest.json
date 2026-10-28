@@ -1,0 +1,300 @@
+{
+  "findingId": "F-003",
+  "cantinaIdentifier": "CANTINA-ECHO-DISTRIBUTOR-001",
+  "target": {
+    "name": "Distributor.sol",
+    "primaryImplementation": "0x1798D23f29968b4fff7A60A90645B0939d04f47E",
+    "secondaryImplementation": "0x1B4fA4F9BDd13Bfdec49DA85750Ab38387EE4DCF",
+    "factory": "0x3002aadad07ab12e5bb8098de3542bee2ad44fed",
+    "genericRegistry": "0x73612914c81a9c072333ea9ea71a9b26a5b9a707",
+    "network": "Base Mainnet",
+    "chainId": 8453,
+    "scopeReference": "bounties/base/scope.md#L176",
+    "tier": 1,
+    "product": "Echo"
+  },
+  "evidenceFiles": [
+    {
+      "path": "bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol",
+      "sha256": "1b43b7bd18de6b9a6c9fa8e7a11659967e10a214c600bfc78c3ffc69e9f68b6f",
+      "githubUrl": "https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol"
+    },
+    {
+      "path": "bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Types.sol",
+      "sha256": "8f6f8607ab65090d10dac3db544a24abe4688b073c29329a27d5810a3b1ee42a",
+      "githubUrl": "https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Types.sol"
+    },
+    {
+      "path": "bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/UnlockerLib.sol",
+      "sha256": "000c48b59b06d7c534ba3b1bf18c18dc4934259a6e3790a35f3698b2a1fa0738",
+      "githubUrl": "https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/UnlockerLib.sol"
+    },
+    {
+      "path": "bounties/base/eip-7702-proxy/test/EchoDistributorReplayPoC.t.sol",
+      "sha256": "ab6b7d319f4a0a67f8d987dc846762fcd3b84b0c71feb27e4c2c8b96a7f4fce5",
+      "githubUrl": "https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/eip-7702-proxy/test/EchoDistributorReplayPoC.t.sol"
+    },
+    {
+      "path": "bounties/base/eip-7702-proxy/test/EchoDistributorRegression.t.sol",
+      "sha256": "21105b13f9c7847212faa3987bb4e266133f8984089f2241d880cb804822ab74",
+      "githubUrl": "https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/eip-7702-proxy/test/EchoDistributorRegression.t.sol"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/01-target-and-scope-manifest.md",
+      "sha256": "bb4473750618aa726aa7a80b12b18d932e46c98fd883bd33e4c0459dc875d32c"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/02-invariant-and-callgraph.md",
+      "sha256": "dd1222dbe4033b4cc1aee5c2d8a531040d2e93c34199d31a964088ebbc29828f"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/03-poc-and-control-results.md",
+      "sha256": "176881165baa26492376cdefe7f4549bc73d8f80e4ad35b861315a0a23c576cb"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/04-impact-and-severity-analysis.md",
+      "sha256": "41352338a23c5d8c874fff77330c52ba662f460922658ad1bde17ef0dbce329c"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/05-remediation-review.md",
+      "sha256": "36e146640277e92d3eab5410eaab783e568ab90fe3f5c15ac1998ec3aaaa0c6b"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/06-independent-review-and-overlap.md",
+      "sha256": "1f94b0b8d06e1066a9e8d47efb3b2746f19b56c8f6c8eb05fb82ff977452febd"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/07-severity-and-reward-assessment.md",
+      "sha256": "b163324e3c44f38157a21861efc8bb7bcb6a7bac5b24e57e5c405a650b84d19b"
+    }
+  ],
+  "verificationSuiteCommands": [
+    "export PATH=\"/home/nova/.foundry/bin:$PATH\" && cd /home/nova/projects/cantina/bounties/base/eip-7702-proxy && forge test --match-path \"test/EchoDistributorReplayPoC.t.sol\" -vvv",
+    "export PATH=\"/home/nova/.foundry/bin:$PATH\" && cd /home/nova/projects/cantina/bounties/base/eip-7702-proxy && forge test --match-path \"test/EchoDistributorRegression.t.sol\" -vvv"
+  ],
+  "testResults": {
+    "poc": {
+      "suite": "EchoDistributorReplayPoC.t.sol",
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "duration": "2.34s"
+    },
+    "regression": {
+      "suite": "EchoDistributorRegression.t.sol",
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "duration": "2.10s"
+    }
+  },
+  "readinessGate": {
+    "targetAuthenticated": true,
+    "scopeVerified": true,
+    "deterministicallyReproduced": true,
+    "controlsPass": true,
+    "invariantViolated": true,
+    "economicConsequencesMeasured": true,
+    "remediationReviewed": true,
+    "duplicateScreeningDocumented": true,
+    "independentReviewCompleted": true,
+    "reportReproducible": true,
+    "overallStatus": "READY_FOR_HUMAN_REVIEW"
+  },
+  "investigationDossierFiles": [
+    {
+      "path": "bounties/base/findings/distributor_investigation/01-target-and-scope-manifest.md",
+      "sha256": "bb4473750618aa726aa7a80b12b18d932e46c98fd883bd33e4c0459dc875d32c"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/02-invariant-and-callgraph.md",
+      "sha256": "dd1222dbe4033b4cc1aee5c2d8a531040d2e93c34199d31a964088ebbc29828f"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/02-source-and-environment-provenance.md",
+      "sha256": "e43fd98b42fd235ad9403093d8f9366cc74230348b8769869eb488b4defdda22"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/03-poc-and-control-results.md",
+      "sha256": "176881165baa26492376cdefe7f4549bc73d8f80e4ad35b861315a0a23c576cb"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/03-security-property-and-hypotheses.md",
+      "sha256": "eb5aa85f3d7b9bb8dcfd23175beb887d6dc555b0848661169579075eefb2fe7c"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/04-authenticated-test-results.md",
+      "sha256": "527534bb1742d5c8da76cefae9480e7d04d21bc31fdd34aaeb7390a53ff7a16e"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/04-impact-and-severity-analysis.md",
+      "sha256": "41352338a23c5d8c874fff77330c52ba662f460922658ad1bde17ef0dbce329c"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/05-independent-reproduction.md",
+      "sha256": "3064582e794716287598af3cc09a8950ae4216378df46f94bfd5359eeddbc31b"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/05-remediation-review.md",
+      "sha256": "36e146640277e92d3eab5410eaab783e568ab90fe3f5c15ac1998ec3aaaa0c6b"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/06-economic-impact-evidence.md",
+      "sha256": "76342c059e05f4ccc45fd4856747f93241c73849be40d9d839417d3e5726b0e9"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/06-independent-review-and-overlap.md",
+      "sha256": "1f94b0b8d06e1066a9e8d47efb3b2746f19b56c8f6c8eb05fb82ff977452febd"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/07-readiness-gate-results.json",
+      "sha256": "78b6c0f508575a723ce90b542df44686496c8240757e910f106b891366e83c83"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/07-remediation-and-regression-evidence.md",
+      "sha256": "a65dc4efa30951e82941d9652517cffc50472b09e522b03b9913d480ef45d126"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/07-severity-and-reward-assessment.md",
+      "sha256": "b163324e3c44f38157a21861efc8bb7bcb6a7bac5b24e57e5c405a650b84d19b"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/08-adversarial-review.md",
+      "sha256": "8ec20e4714b279a3cc95804e668fea5f27fba8801635284061ed01920b126e3e"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/08-cantina-submission.md",
+      "sha256": "33517638a81e5db1dd20f70ade7ee56a3b9fcf20e41dd658115c6c331b3973bd"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/09-readiness-gate-results.json",
+      "sha256": "78b6c0f508575a723ce90b542df44686496c8240757e910f106b891366e83c83"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/10-cantina-submission.md",
+      "sha256": "33517638a81e5db1dd20f70ade7ee56a3b9fcf20e41dd658115c6c331b3973bd"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/adversarial-review-checklist.md",
+      "sha256": "45d6dd4cf209fb7f70bafba0d723deff6200c10a1d7b22fc93e1efe064559b39"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/artifact-integrity-report.md",
+      "sha256": "67f8e8ddccd1a41335c52c131550825cf41c70bc5675cab852de0c8fbcd6d826"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/claim-evidence-matrix.json",
+      "sha256": "a11c936d33d85b014fc5436e28ec45f52e28e2f8f5400582c67105e487085b60"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/counter-hypotheses.json",
+      "sha256": "7b5a87f4ef0c9ae4d7ea945600224a8e091969c170276cae4440f0d87a6f404e"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/deployment-identity.json",
+      "sha256": "8cc7773292eb1d498a82ffc818cc15a3e728ca7730a1f161e5be473860bfdc01"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/environment-manifest.json",
+      "sha256": "089dcc136ba84435d178426211796f898df73bb4ac0cbebd708ae05aa7ff6042"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/execution-authentication-report.md",
+      "sha256": "bb17a17d93eb3e8267ae2b7f7b998d0c7d655fac45a525ff09befc0c4bfadb2f"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/execution-receipt.json",
+      "sha256": "f97b449a53835dff562ad38567f93892b6b2998c34c39d06bd85929855e3e791"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/final-investigation-status.json",
+      "sha256": "9e2753f145b21befb91730adaef74a5e4919c912c3202eb671667ffaa52596c1"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/hypothesis-matrix.csv",
+      "sha256": "1222ea73e8c6ea9fac2c736a6a3ecc2cd8b994247a58035b1903f764f452f4c6"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/impact-calculations.json",
+      "sha256": "7c28b89413cfbc6560ad4c201488332d4b487a270fcd92ced2560b68828d8e0c"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/independent-review-results.json",
+      "sha256": "7b32307e104d78ba75dd12d6ad9141d03ec2bf3a154149af33aa4a1b12f4411d"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/raw-test-output.log",
+      "sha256": "6a8814083549d54113a2ec14633d18d775d56cc30b90a107cf2dc9ba033c7470"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/regression-results.json",
+      "sha256": "501e6f7b649fab490af8419378e2dc0b6b75e2dca22e935c08c5858dd75adc58"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/remediation.patch",
+      "sha256": "eb3afef641470d1416c74b187adf2c07286c9eedb5fb5db94e5b61714dccba91"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/reproduction-commands.md",
+      "sha256": "492bd5e26d55903d1186881865cae27a27655ae4e4734142a655d5c091ebd52d"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/reproduction-comparison.json",
+      "sha256": "e55923c4dd3bc41cfd11198b5b3224936768bc836e53ac7dc9aa4e66e7addf2d"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/reproduction-differences.md",
+      "sha256": "ecdfadad75be02e58cff06f2b2cf4e48bc11d0c0967a0b0d45dd74eccc5ee2eb"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/reproduction-run-01.json",
+      "sha256": "9e2591535ce77d46e559c218a08be5d443db8771c51d5549696998b5c874c2c5"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/review-decision.json",
+      "sha256": "4ae24bc0833b3ee36f870389f37fd7ac7e922e40262cc25a3dbabd966ebcfb18"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/scope-evidence.json",
+      "sha256": "2bca8334bd0904c404657403a10b784b5ea7b21809372f7e217fe26b83bfce4b"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/security-properties.json",
+      "sha256": "c6b4b32a268e130a8fcd5bbfa16a676f1a7c0c701fdfe2c97fb62e6c67676352"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/severity-rationale.md",
+      "sha256": "7383cbab1ca0e333cd6f784d170b5b01f677a90d8e7fa87226964e794f927dc3"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/source-authentication-report.md",
+      "sha256": "cb666d90e6979169e44888182a046a17fc6ce647c9a786967cc5ac3d93a1916f"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/source-provenance.json",
+      "sha256": "12c66428442b049aa61073fcf8bd9f5c21c10eeb6e375b3ba9539a496c6852b0"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/storage-layout-after.json",
+      "sha256": "ea4e4351bba82320ebbb5128e11ae507c12fab93e14ef88554b54cf989474071"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/storage-layout-before.json",
+      "sha256": "293791ba20e8e9de1c39ad45e63b6211c057e3ec9b92131459d2e614109af7a1"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/test-evidence-catalog.md",
+      "sha256": "397a1bdde6a8a85eb74e5922fa95c2e4e930a6207a474014f70a897d05bb8e21"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/test-results.json",
+      "sha256": "00382ed303cf94b00cc47a0738c2c4b840adb14ef714779ab6d05d6b9856b531"
+    },
+    {
+      "path": "bounties/base/findings/distributor_investigation/trace-manifest.json",
+      "sha256": "3016f422ba5b7c3608547ca418bea6b7c2701a98cff57f7787af547f4ce81014"
+    }
+  ]
+}

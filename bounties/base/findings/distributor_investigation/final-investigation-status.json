@@ -1,0 +1,12 @@
+{
+  "findingId": "F-003",
+  "cantinaIdentifier": "CANTINA-ECHO-DISTRIBUTOR-001",
+  "execution_status": "PASSED",
+  "finding_status": "CONFIRMED",
+  "review_status": "APPROVED",
+  "approval_status": "PENDING",
+  "submission_status": "PREPARED",
+  "recommendedSeverity": "HIGH",
+  "terminalDecision": "CONFIRMED",
+  "summary": "The alleged EIP-712 signature replay vulnerability in Coinbase Echo Distributor is confirmed by deterministic Foundry reproduction, violates uniqueness and fee-hurdle invariants, causes 100% carry fee evasion on appreciated tranches, and is remediated via a safe Slot 13 digest nullifier mapping. Dossier is prepared and pending human approval for external Cantina submission."
+}

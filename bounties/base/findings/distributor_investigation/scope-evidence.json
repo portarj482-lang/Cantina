@@ -1,0 +1,14 @@
+{
+  "program": "Coinbase / Base Smart Contract Bug Bounty Program",
+  "platform": "Cantina",
+  "scopeDocument": "bounties/base/scope.md",
+  "scopeLine": 176,
+  "scopeSection": "### Echo",
+  "productTier": "Tier 1",
+  "productName": "Echo",
+  "targetInScope": true,
+  "scopeExcerpt": "Base Bounty Tier 1 Products: Echo (`DistributorFactory` 0x3002aadad07ab12e5bb8098de3542bee2ad44fed, `Distributor` 0x1798D23f29968b4fff7A60A90645B0939d04f47E)",
+  "rewardCap": 50000,
+  "totalProgramPool": 5000000,
+  "verifiedBy": "MQ-CANTINA-DISTRIBUTOR-001 (SCOPE-DUPLICATE-CHECKER)"
+}

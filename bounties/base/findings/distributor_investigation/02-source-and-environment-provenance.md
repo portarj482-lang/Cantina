@@ -10,7 +10,7 @@
 ## 1. Pinned Source Code Identification
 
 - **Git Repository:** `https://github.com/portarj482-lang/Cantina.git`
-- **Pinned Commit:** `bf53b4f70ee62bbc369607efd4bc90a6a650e5a8`
+- **Pinned Commit:** `main`
 - **Source Paths & Hashes:**
   - `Distributor.sol`: `1b43b7bd18de6b9a6c9fa8e7a11659967e10a214c600bfc78c3ffc69e9f68b6f`
   - `Types.sol`: `8f6f8607ab65090d10dac3db544a24abe4688b073c29329a27d5810a3b1ee42a`

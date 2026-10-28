@@ -1,6 +1,6 @@
 {
   "repository": "https://github.com/portarj482-lang/Cantina.git",
-  "commit": "bf53b4f70ee62bbc369607efd4bc90a6a650e5a8",
+  "commit": "main",
   "pinnedSources": [
     {
       "sourcePath": "bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol",

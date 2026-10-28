@@ -26,7 +26,7 @@
   },
   "repository": {
     "remoteUrl": "https://github.com/portarj482-lang/Cantina.git",
-    "pinnedCommit": "bf53b4f70ee62bbc369607efd4bc90a6a650e5a8",
+    "pinnedCommit": "main",
     "workspaceRoot": "/home/nova/projects/cantina"
   },
   "targetChain": {

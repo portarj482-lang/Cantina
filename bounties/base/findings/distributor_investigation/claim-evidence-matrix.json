@@ -30,7 +30,7 @@
       "security_property": "Carry Withdrawal Authorization Monotonicity",
       "preconditions": "Deal lead signs partial carry withdrawal; accrued carry exceeds voucher amount",
       "test_case_ids": ["test_withdrawCarry_SignatureReplayExploit"],
-      "evidence_refs": ["test-results.json", "raw-test-output.log", "Distributor.sol#L393-L441"],
+      "evidence_refs": ["test-results.json", "raw-test-output.log", "Distributor.sol#L393-L442"],
       "expected_result": "Cumulative withdrawals cannot exceed single signed voucher authorization",
       "observed_result": "Voucher replayed 3x, draining 150 tokens from pool instead of 50 tokens authorized",
       "interpretation": "Permissionless function allows unauthorized involuntary liquidation of carry pool",

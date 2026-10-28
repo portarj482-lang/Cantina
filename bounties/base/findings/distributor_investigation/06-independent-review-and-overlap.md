@@ -4,8 +4,8 @@
 **Target Contract:** `Distributor.sol` (`0x1798D23f29968b4fff7A60A90645B0939d04f47E` on Base Mainnet)  
 **Assigned Independent Reviewer:** Lead Verification Architect & Adversarial Challenger (QRPE / G7 Mesh)  
 **Evaluation Date:** 2026-10-28  
-**Repository Source:** [Distributor.sol](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol)  
-**PoC Execution Evidence:** [EchoDistributorReplayPoC.t.sol](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/eip-7702-proxy/test/EchoDistributorReplayPoC.t.sol)  
+**Repository Source:** [Distributor.sol](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol)  
+**PoC Execution Evidence:** [EchoDistributorReplayPoC.t.sol](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/findings/distributor_investigation/test/EchoDistributorReplayPoC.t.sol)  
 
 ---
 
@@ -18,7 +18,7 @@ To guarantee scientific rigor, an independent reviewer not involved in authoring
 - **Evidentiary Falsification:**
   - In production Web3 distributions on Base, EIP-712 vouchers require reasonable expiration buffers (typically 24 hours to 30 days) to accommodate user transaction delays, gas price spikes, or batch relayer scheduling.
   - Furthermore, `Distributor.sol` contains no on-chain minimum or maximum expiration bounds; it only checks `if (block.timestamp >= claimData.expiresAt) revert ClaimExpired(claimData.expiresAt)`.
-  - As proven in [`test_PropertyA_SignatureUniqueness_Falsified`](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/eip-7702-proxy/test/EchoDistributorReplayPoC.t.sol#L165-L195), any valid unexpired voucher can be submitted multiple times in the same block or across multiple blocks without hindrance.
+  - As proven in [`test_PropertyA_SignatureUniqueness_Falsified`](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/findings/distributor_investigation/test/EchoDistributorReplayPoC.t.sol#L165-L195), any valid unexpired voucher can be submitted multiple times in the same block or across multiple blocks without hindrance.
 - **Verdict:** **CHALLENGE REFUTED**. Expiration does not prevent intra-window signature reuse.
 
 ---
@@ -29,7 +29,7 @@ To guarantee scientific rigor, an independent reviewer not involved in authoring
   - The primary economic exploit is **not** theft of principal allocation, but **evasion of the performance fee (carry)**.
   - Performance fee calculation depends strictly on `claimData.price`.
   - When an investor replays a voucher issued at \$1.00 when the token is worth \$10.00, the contract processes the claim using the stale \$1.00 valuation.
-  - As proven in [`test_PropertyC_CarryAccounting_ReplayEvasionExploit`](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/eip-7702-proxy/test/EchoDistributorReplayPoC.t.sol#L250-L290), this completely zeroes out the carry fee ($0 carry collected vs 68 tokens owed), causing permanent 100% loss of performance fees to the deal lead and platform.
+  - As proven in [`test_PropertyC_CarryAccounting_ReplayEvasionExploit`](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/findings/distributor_investigation/test/EchoDistributorReplayPoC.t.sol#L250-L290), this completely zeroes out the carry fee ($0 carry collected vs 68 tokens owed), causing permanent 100% loss of performance fees to the deal lead and platform.
 - **Verdict:** **CHALLENGE REFUTED**. Allocation capping does not protect the integrity of fee accounting.
 
 ---
@@ -52,7 +52,7 @@ To guarantee scientific rigor, an independent reviewer not involved in authoring
   - Line 390 of `Distributor.sol` explicitly states:
     > *"There is no additional access control on the function, which allows anyone to execute a claim as long as the signatures are valid."*
   - Anyone (an MEV bot or network observer) can extract the signatures from a legitimate transaction and call `withdrawCarry` repeatedly.
-  - As proven in [`test_withdrawCarry_SignatureReplayExploit`](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/eip-7702-proxy/test/EchoDistributorReplayPoC.t.sol#L330-L370), 3 consecutive replayed calls drain 150 tokens from the carry pool without authorization.
+  - As proven in [`test_withdrawCarry_SignatureReplayExploit`](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/findings/distributor_investigation/test/EchoDistributorReplayPoC.t.sol#L330-L370), 3 consecutive replayed calls drain 150 tokens from the carry pool without authorization.
 - **Verdict:** **CHALLENGE REFUTED**. Public caller access creates an immediate replay vector.
 
 ---

@@ -17,27 +17,27 @@
     {
       "path": "bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol",
       "sha256": "1b43b7bd18de6b9a6c9fa8e7a11659967e10a214c600bfc78c3ffc69e9f68b6f",
-      "githubUrl": "https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol"
+      "githubUrl": "https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol"
     },
     {
       "path": "bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Types.sol",
       "sha256": "8f6f8607ab65090d10dac3db544a24abe4688b073c29329a27d5810a3b1ee42a",
-      "githubUrl": "https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Types.sol"
+      "githubUrl": "https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Types.sol"
     },
     {
       "path": "bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/UnlockerLib.sol",
       "sha256": "000c48b59b06d7c534ba3b1bf18c18dc4934259a6e3790a35f3698b2a1fa0738",
-      "githubUrl": "https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/UnlockerLib.sol"
+      "githubUrl": "https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/UnlockerLib.sol"
     },
     {
-      "path": "bounties/base/eip-7702-proxy/test/EchoDistributorReplayPoC.t.sol",
+      "path": "bounties/base/findings/distributor_investigation/test/EchoDistributorReplayPoC.t.sol",
       "sha256": "ab6b7d319f4a0a67f8d987dc846762fcd3b84b0c71feb27e4c2c8b96a7f4fce5",
-      "githubUrl": "https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/eip-7702-proxy/test/EchoDistributorReplayPoC.t.sol"
+      "githubUrl": "https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/findings/distributor_investigation/test/EchoDistributorReplayPoC.t.sol"
     },
     {
-      "path": "bounties/base/eip-7702-proxy/test/EchoDistributorRegression.t.sol",
+      "path": "bounties/base/findings/distributor_investigation/test/EchoDistributorRegression.t.sol",
       "sha256": "21105b13f9c7847212faa3987bb4e266133f8984089f2241d880cb804822ab74",
-      "githubUrl": "https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/eip-7702-proxy/test/EchoDistributorRegression.t.sol"
+      "githubUrl": "https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/findings/distributor_investigation/test/EchoDistributorRegression.t.sol"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/01-target-and-scope-manifest.md",
@@ -49,23 +49,23 @@
     },
     {
       "path": "bounties/base/findings/distributor_investigation/03-poc-and-control-results.md",
-      "sha256": "176881165baa26492376cdefe7f4549bc73d8f80e4ad35b861315a0a23c576cb"
+      "sha256": "d4f5d2b4c98cbc5d05a82e249a154e2afd79579aaf9a3e4d131aa9dbd281a64d"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/04-impact-and-severity-analysis.md",
-      "sha256": "41352338a23c5d8c874fff77330c52ba662f460922658ad1bde17ef0dbce329c"
+      "sha256": "1178ed969417bb5ba74eda457ddca57ac5b8f68d53c98fdaac8244c2bf2b96a5"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/05-remediation-review.md",
-      "sha256": "36e146640277e92d3eab5410eaab783e568ab90fe3f5c15ac1998ec3aaaa0c6b"
+      "sha256": "18f5222c4f57e2658d586e7a87ea3e53721cfe0a45f5851f07e0621753191f50"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/06-independent-review-and-overlap.md",
-      "sha256": "1f94b0b8d06e1066a9e8d47efb3b2746f19b56c8f6c8eb05fb82ff977452febd"
+      "sha256": "c0cf9c80bf8e0393225d4f8c42f7cb8fbffbb0cf24980a0f5dcf730208a4d1a6"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/07-severity-and-reward-assessment.md",
-      "sha256": "b163324e3c44f38157a21861efc8bb7bcb6a7bac5b24e57e5c405a650b84d19b"
+      "sha256": "1469f56c1caf9ef25f4d0be7e28b5b81f61e98046f0955f7f3caaf85acadf8e3"
     }
   ],
   "verificationSuiteCommands": [
@@ -114,11 +114,11 @@
     },
     {
       "path": "bounties/base/findings/distributor_investigation/02-source-and-environment-provenance.md",
-      "sha256": "e43fd98b42fd235ad9403093d8f9366cc74230348b8769869eb488b4defdda22"
+      "sha256": "9514b6049e9cc6c0bb29b04d5ba65d1a9bbd7cf7cacde31ae4707eec757477ec"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/03-poc-and-control-results.md",
-      "sha256": "176881165baa26492376cdefe7f4549bc73d8f80e4ad35b861315a0a23c576cb"
+      "sha256": "d4f5d2b4c98cbc5d05a82e249a154e2afd79579aaf9a3e4d131aa9dbd281a64d"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/03-security-property-and-hypotheses.md",
@@ -130,7 +130,7 @@
     },
     {
       "path": "bounties/base/findings/distributor_investigation/04-impact-and-severity-analysis.md",
-      "sha256": "41352338a23c5d8c874fff77330c52ba662f460922658ad1bde17ef0dbce329c"
+      "sha256": "1178ed969417bb5ba74eda457ddca57ac5b8f68d53c98fdaac8244c2bf2b96a5"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/05-independent-reproduction.md",
@@ -138,7 +138,7 @@
     },
     {
       "path": "bounties/base/findings/distributor_investigation/05-remediation-review.md",
-      "sha256": "36e146640277e92d3eab5410eaab783e568ab90fe3f5c15ac1998ec3aaaa0c6b"
+      "sha256": "18f5222c4f57e2658d586e7a87ea3e53721cfe0a45f5851f07e0621753191f50"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/06-economic-impact-evidence.md",
@@ -146,7 +146,7 @@
     },
     {
       "path": "bounties/base/findings/distributor_investigation/06-independent-review-and-overlap.md",
-      "sha256": "1f94b0b8d06e1066a9e8d47efb3b2746f19b56c8f6c8eb05fb82ff977452febd"
+      "sha256": "c0cf9c80bf8e0393225d4f8c42f7cb8fbffbb0cf24980a0f5dcf730208a4d1a6"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/07-readiness-gate-results.json",
@@ -158,7 +158,7 @@
     },
     {
       "path": "bounties/base/findings/distributor_investigation/07-severity-and-reward-assessment.md",
-      "sha256": "b163324e3c44f38157a21861efc8bb7bcb6a7bac5b24e57e5c405a650b84d19b"
+      "sha256": "1469f56c1caf9ef25f4d0be7e28b5b81f61e98046f0955f7f3caaf85acadf8e3"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/08-adversarial-review.md",
@@ -166,7 +166,7 @@
     },
     {
       "path": "bounties/base/findings/distributor_investigation/08-cantina-submission.md",
-      "sha256": "33517638a81e5db1dd20f70ade7ee56a3b9fcf20e41dd658115c6c331b3973bd"
+      "sha256": "85e1ae963ef7a8fdac4eda26b575d93af860cf03599e2af6d4eae748dc84795e"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/09-readiness-gate-results.json",
@@ -174,7 +174,7 @@
     },
     {
       "path": "bounties/base/findings/distributor_investigation/10-cantina-submission.md",
-      "sha256": "33517638a81e5db1dd20f70ade7ee56a3b9fcf20e41dd658115c6c331b3973bd"
+      "sha256": "85e1ae963ef7a8fdac4eda26b575d93af860cf03599e2af6d4eae748dc84795e"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/adversarial-review-checklist.md",
@@ -186,7 +186,7 @@
     },
     {
       "path": "bounties/base/findings/distributor_investigation/claim-evidence-matrix.json",
-      "sha256": "a11c936d33d85b014fc5436e28ec45f52e28e2f8f5400582c67105e487085b60"
+      "sha256": "5c869b0a68673682315badf8cda26e6e12e23f045bdefdc6a934695603f76df1"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/counter-hypotheses.json",
@@ -198,7 +198,7 @@
     },
     {
       "path": "bounties/base/findings/distributor_investigation/environment-manifest.json",
-      "sha256": "089dcc136ba84435d178426211796f898df73bb4ac0cbebd708ae05aa7ff6042"
+      "sha256": "eac5c3a1471dfb48a15d55de3ece10b0797a68df1c4cd9c8b932210fdc555501"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/execution-authentication-report.md",
@@ -230,7 +230,7 @@
     },
     {
       "path": "bounties/base/findings/distributor_investigation/regression-results.json",
-      "sha256": "501e6f7b649fab490af8419378e2dc0b6b75e2dca22e935c08c5858dd75adc58"
+      "sha256": "585cb72b2d8d2a4b6e995b9fc2e5bd61f3e49e130301d8d5e177298685fc30bb"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/remediation.patch",
@@ -270,11 +270,11 @@
     },
     {
       "path": "bounties/base/findings/distributor_investigation/source-authentication-report.md",
-      "sha256": "cb666d90e6979169e44888182a046a17fc6ce647c9a786967cc5ac3d93a1916f"
+      "sha256": "2cf794233a9824ff751bda8629aee7fd24f479ec2d4d4c3834465e3bec034c53"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/source-provenance.json",
-      "sha256": "12c66428442b049aa61073fcf8bd9f5c21c10eeb6e375b3ba9539a496c6852b0"
+      "sha256": "2d0f7da2b07abfe29e0d2fa3b8a26f52ef29e1ae99515c2764afbd9bb8582e7d"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/storage-layout-after.json",
@@ -286,11 +286,11 @@
     },
     {
       "path": "bounties/base/findings/distributor_investigation/test-evidence-catalog.md",
-      "sha256": "397a1bdde6a8a85eb74e5922fa95c2e4e930a6207a474014f70a897d05bb8e21"
+      "sha256": "b10e9eabd749c38d0c4563221edfc515c644847679eb43ccb1f631cf93468bae"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/test-results.json",
-      "sha256": "00382ed303cf94b00cc47a0738c2c4b840adb14ef714779ab6d05d6b9856b531"
+      "sha256": "d34646d5c6b66045e2ad487218a7e8d905670b3bb6679ca28bae41637c7780ab"
     },
     {
       "path": "bounties/base/findings/distributor_investigation/trace-manifest.json",

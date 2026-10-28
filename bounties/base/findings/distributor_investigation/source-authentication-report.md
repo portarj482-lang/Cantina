@@ -12,7 +12,7 @@
 | Attribute | Verified Value | Evidence Ref |
 | :--- | :--- | :--- |
 | **Repository URL** | `https://github.com/portarj482-lang/Cantina.git` | `source-provenance.json` |
-| **Commit SHA** | `bf53b4f70ee62bbc369607efd4bc90a6a650e5a8` | Git tree HEAD |
+| **Commit SHA** | `main` | Git tree HEAD |
 | **Target Contract** | `bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol` | SHA-256: `1b43b7bd18de6b9a6c9fa8e7a11659967e10a214c600bfc78c3ffc69e9f68b6f` |
 | **Types Library** | `bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Types.sol` | SHA-256: `8f6f8607ab65090d10dac3db544a24abe4688b073c29329a27d5810a3b1ee42a` |
 | **Unlocker Library** | `bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/UnlockerLib.sol` | SHA-256: `000c48b59b06d7c534ba3b1bf18c18dc4934259a6e3790a35f3698b2a1fa0738` |

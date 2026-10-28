@@ -3,7 +3,7 @@
 **Finding Reference:** `F-003 / CANTINA-ECHO-DISTRIBUTOR-001`  
 **Target Contract:** `Distributor.sol` (`0x1798D23f29968b4fff7A60A90645B0939d04f47E` on Base Mainnet)  
 **Authoring Persona:** `META-QUALIA: CANTINA EXECUTION-BUILDING AGENT (MQ-CANTINA-DISTRIBUTOR-001)`  
-**Repository Source:** [Distributor.sol](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol)  
+**Repository Source:** [Distributor.sol](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol)  
 **Basescan Verification:** [0x1798D23f29968b4fff7A60A90645B0939d04f47E](https://basescan.org/address/0x1798D23f29968b4fff7A60A90645B0939d04f47E#code)  
 
 ---
@@ -14,7 +14,7 @@ In Coinbase Echo SPVs, carried interest represents the deal lead and platform's 
 
 ### 1.1 Formula Specification
 
-According to [`_calculateCarryAmountUSDC`](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol#L349-L361):
+According to [`_calculateCarryAmountUSDC`](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol#L349-L361):
 
 $$R_{\text{free}} = \max(0, I_{\text{USDC}} - C_{\text{claimedUSDC}})$$
 
@@ -115,7 +115,7 @@ Timeline of Events in Real-World Exploit:
 
 ### 2.3 Secondary Exploit: Unauthorized Carry Pool Liquidation
 
-A distinct, severe vulnerability exists in [`withdrawCarry`](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol#L393-L441):
+A distinct, severe vulnerability exists in [`withdrawCarry`](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol#L393-L442):
 1. **Public Execution Vector:** The function is completely public (`external onlyIf(isEnabled)`):
    > *"There is no additional access control on the function, which allows anyone to execute a claim as long as the signatures are valid."*
 2. **Replay Condition:** Neither `CarryWithdrawalData` nor `Distributor` checks digest reuse or caller identity.

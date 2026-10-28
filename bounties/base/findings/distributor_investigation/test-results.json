@@ -1,5 +1,5 @@
 {
-  "suite": "bounties/base/eip-7702-proxy/test/EchoDistributorReplayPoC.t.sol",
+  "suite": "bounties/base/findings/distributor_investigation/test/EchoDistributorReplayPoC.t.sol",
   "contract": "EchoDistributorReplayPoCTest",
   "compiler": "solc 0.8.23",
   "runner": "forge test",

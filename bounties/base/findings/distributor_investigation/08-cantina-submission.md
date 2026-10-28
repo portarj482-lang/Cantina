@@ -16,17 +16,17 @@
 
 A critical authorization and fee accounting flaw exists in Coinbase Echo's `Distributor` implementation contract on Base mainnet. In the Echo architecture, token releases to syndicate investors and performance fee withdrawals to deal leads require dual EIP-712 cryptographic authorization from the user/claimer and the Echo platform (`SIGNER_ROLE`).
 
-However, neither [`ClaimData`](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Types.sol#L32-L39) nor [`CarryWithdrawalData`](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Types.sol#L91-L97) incorporates a `nonce` or unique identifier, and `Distributor.sol` maintains zero tracking of consumed typed-data digests. Consequently, any signed voucher remains reusable indefinitely until its timestamp expiration (`expiresAt`).
+However, neither [`ClaimData`](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Types.sol#L29-L37) nor [`CarryWithdrawalData`](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Types.sol#L84-L90) incorporates a `nonce` or unique identifier, and `Distributor.sol` maintains zero tracking of consumed typed-data digests. Consequently, any signed voucher remains reusable indefinitely until its timestamp expiration (`expiresAt`).
 
 This flaw creates two distinct, high-impact exploit vectors:
 1. **Performance Fee (Carry) Evasion:** An investor with unlocked tokens can replay an unexpired low-valuation voucher issued during an earlier distribution tranche when market prices appreciate. The contract evaluates the capital hurdle against the stale, depressed token price, reducing the computed performance fee to **zero** and defrauding the deal lead and platform of 100% of earned carried interest.
-2. **Unauthorized Carry Pool Draining:** Because [`withdrawCarry()`](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol#L393-L441) has no caller restrictions, any third party or MEV bot observing a legitimate partial carry withdrawal can replay the identical calldata in rapid succession, forcibly draining the deal lead's accrued carry pool.
+2. **Unauthorized Carry Pool Draining:** Because [`withdrawCarry()`](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol#L393-L442) has no caller restrictions, any third party or MEV bot observing a legitimate partial carry withdrawal can replay the identical calldata in rapid succession, forcibly draining the deal lead's accrued carry pool.
 
 ---
 
 ## 2. Root Cause and Exact Code Locations
 
-In [`Distributor.sol:305-318`](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol#L305-L318):
+In [`Distributor.sol:305-318`](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol#L305-L318):
 ```solidity
 bytes32 digest = ClaimDataLib.digestTypedData(claimData, _domainSeparatorV4());
 
@@ -43,7 +43,7 @@ if (!hasRole(SIGNER_ROLE, signerPlatform)) {
     revert UnauthorizedPlatformSigner(signerPlatform);
 }
 ```
-And in [`Distributor.sol:412-426`](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol#L412-L426):
+And in [`Distributor.sol:412-426`](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol#L412-L426):
 ```solidity
 bytes32 digest = CarryWithdrawalLib.digestTypedData(data, _domainSeparatorV4());
 
@@ -172,9 +172,9 @@ This patch is 100% backward-compatible with deployed proxies and introduces zero
 ## 7. Working GitHub Repository & Contract References
 
 - Repository Root: [https://github.com/portarj482-lang/Cantina](https://github.com/portarj482-lang/Cantina)
-- Target Source Code: [`Distributor.sol`](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol)
-- PoC Harness: [`EchoDistributorReplayPoC.t.sol`](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/eip-7702-proxy/test/EchoDistributorReplayPoC.t.sol)
-- Regression Harness: [`EchoDistributorRegression.t.sol`](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/eip-7702-proxy/test/EchoDistributorRegression.t.sol)
+- Target Source Code: [`Distributor.sol`](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol)
+- PoC Harness: [`EchoDistributorReplayPoC.t.sol`](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/findings/distributor_investigation/test/EchoDistributorReplayPoC.t.sol)
+- Regression Harness: [`EchoDistributorRegression.t.sol`](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/findings/distributor_investigation/test/EchoDistributorRegression.t.sol)
 - Primary Deployed Proxy: [0x1798D23f29968b4fff7A60A90645B0939d04f47E on Basescan](https://basescan.org/address/0x1798D23f29968b4fff7A60A90645B0939d04f47E#code)
 - Secondary Deployed Proxy: [0x1B4fA4F9BDd13Bfdec49DA85750Ab38387EE4DCF on Basescan](https://basescan.org/address/0x1B4fA4F9BDd13Bfdec49DA85750Ab38387EE4DCF#code)
 - Proxy Factory: [0x3002aadad07ab12e5bb8098de3542bee2ad44fed on Basescan](https://basescan.org/address/0x3002aadad07ab12e5bb8098de3542bee2ad44fed#code)

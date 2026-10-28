@@ -2,8 +2,8 @@
 
 **Finding Reference:** `F-003 / CANTINA-ECHO-DISTRIBUTOR-001`  
 **Target Contract:** `Distributor.sol` (`0x1798D23f29968b4fff7A60A90645B0939d04f47E`)  
-**Harness Location:** `bounties/base/eip-7702-proxy/test/EchoDistributorReplayPoC.t.sol`  
-**Regression Location:** `bounties/base/eip-7702-proxy/test/EchoDistributorRegression.t.sol`  
+**Harness Location:** `bounties/base/findings/distributor_investigation/test/EchoDistributorReplayPoC.t.sol`  
+**Regression Location:** `bounties/base/findings/distributor_investigation/test/EchoDistributorRegression.t.sol`  
 
 ---
 

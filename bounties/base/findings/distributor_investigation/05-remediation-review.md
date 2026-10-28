@@ -3,8 +3,8 @@
 **Finding Reference:** `F-003 / CANTINA-ECHO-DISTRIBUTOR-001`  
 **Target Contract:** `Distributor.sol` (`0x1798D23f29968b4fff7A60A90645B0939d04f47E` on Base Mainnet)  
 **Authoring Persona:** `META-QUALIA: CANTINA EXECUTION-BUILDING AGENT (MQ-CANTINA-DISTRIBUTOR-001)`  
-**Repository Source:** [Distributor.sol](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol)  
-**Regression Test Suite:** [EchoDistributorRegression.t.sol](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/eip-7702-proxy/test/EchoDistributorRegression.t.sol)  
+**Repository Source:** [Distributor.sol](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol)  
+**Regression Test Suite:** [EchoDistributorRegression.t.sol](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/findings/distributor_investigation/test/EchoDistributorRegression.t.sol)  
 
 ---
 
@@ -126,7 +126,7 @@ Therefore:
 
 ## 4. Regression Verification Suite Evidence
 
-The regression suite [`EchoDistributorRegression.t.sol`](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/eip-7702-proxy/test/EchoDistributorRegression.t.sol) verifies that the patched implementation:
+The regression suite [`EchoDistributorRegression.t.sol`](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/findings/distributor_investigation/test/EchoDistributorRegression.t.sol) verifies that the patched implementation:
 1. Rejects any resubmission of an already consumed `ClaimData` voucher (`SignatureAlreadyConsumed`).
 2. Rejects any resubmission of an already consumed `CarryWithdrawalData` voucher (`SignatureAlreadyConsumed`).
 3. Permits legitimate fresh vouchers to execute seamlessly without hindrance.

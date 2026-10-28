@@ -4,7 +4,7 @@
 **Target Contract:** `Distributor.sol` (`0x1798D23f29968b4fff7A60A90645B0939d04f47E` on Base Mainnet)  
 **Program Scope:** Base Bounty Tier 1 Products (`bounties/base/scope.md#L176`)  
 **Authoring Persona:** `META-QUALIA: CANTINA EXECUTION-BUILDING AGENT (MQ-CANTINA-DISTRIBUTOR-001)`  
-**Repository Source:** [Distributor.sol](https://github.com/portarj482-lang/Cantina/blob/bf53b4f70ee62bbc369607efd4bc90a6a650e5a8/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol)  
+**Repository Source:** [Distributor.sol](https://github.com/portarj482-lang/Cantina/blob/main/bounties/base/tier1_sources/echo_Distributor_Impl/src/unlock/v1/Distributor.sol)  
 
 ---
 

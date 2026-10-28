@@ -4,7 +4,7 @@
 **Investigation ID:** `F-003`  
 **Execution Receipt:** `EXEC-FOUNDRY-ECHO-20261028-001`  
 **Reproduction Receipt:** `REPRO-RUN-01-20261028`  
-**Source Commit:** `bf53b4f70ee62bbc369607efd4bc90a6a650e5a8`  
+**Source Commit:** `main`  
 
 ---
 

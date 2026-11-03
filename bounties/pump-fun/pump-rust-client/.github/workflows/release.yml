@@ -64,7 +64,7 @@ jobs:
       # both hides the version and is fragile — version-branch heads get moved and
       # the old commit can be garbage-collected, breaking resolution. This matches
       # .github/workflows/ci.yml, which gates every PR with this same ref.
-      - uses: dtolnay/rust-toolchain@1.89.0
+      - uses: dtolnay/rust-toolchain@599c45df1a24c1c63ae1129a7e59f46654b8fb66 # 1.89.0
         with:
           components: rustfmt, clippy
 

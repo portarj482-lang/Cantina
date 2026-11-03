@@ -34,7 +34,7 @@ jobs:
           cat /tmp/untracked0.list | du --files0-from=- -sb 2>/dev/null | sort -rn | head -n 200 > /tmp/top200_untracked.txt || true
 
       - name: Upload Top-200 Untracked Audit Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: top200-untracked-audit
           path: /tmp/top200_untracked.txt

@@ -133,6 +133,9 @@ class VerificationEngineerWorkflow(AgentWorkflow):
             # Default verification check: targeted deterministic baseline check
             test_commands = ["python3 -m unittest global/core/tests/test_case_state.py"]
 
+        if not re.match(r'^[a-zA-Z0-9_\-./\\]+$', workspace_root):
+            raise ValueError("Invalid workspace_root path")
+
         for cmd in test_commands:
             t0 = time.time()
             res = subprocess.run(cmd, shell=True, cwd=workspace_root, capture_output=True, text=True, env=env)

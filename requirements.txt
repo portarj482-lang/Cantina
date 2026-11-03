@@ -1,6 +1,6 @@
 # Pinned dependencies generated for Python 3.10+
 # Run: pip-compile requirements.in --output-file=requirements.txt
-jsonschema==4.10.3
-pyyaml==6.0.1
 attrs==23.2.0
+jsonschema==4.10.3
 pyrsistent==0.20.0
+pyyaml==6.0.3
